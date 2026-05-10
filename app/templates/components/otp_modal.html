@@ -1,0 +1,181 @@
+<!-- OTP VERIFICATION MODAL -->
+<div id="otpModal" class="otp-modal">
+    <div class="otp-modal-content">
+        <div class="otp-header">
+            <span class="otp-icon">🔐</span>
+            <h2>Verify Your Email</h2>
+            <p>We've sent a 6-digit code to <br><strong id="displayEmail"></strong></p>
+        </div>
+        
+        <div class="otp-body">
+            <div class="otp-input-container">
+                <input type="text" maxlength="1" class="otp-input" data-index="0">
+                <input type="text" maxlength="1" class="otp-input" data-index="1">
+                <input type="text" maxlength="1" class="otp-input" data-index="2">
+                <input type="text" maxlength="1" class="otp-input" data-index="3">
+                <input type="text" maxlength="1" class="otp-input" data-index="4">
+                <input type="text" maxlength="1" class="otp-input" data-index="5">
+            </div>
+            <p id="otpError" class="otp-error-msg"></p>
+            
+            <div class="otp-timer">
+                <span>Expires in: </span>
+                <span id="countdown">05:00</span>
+            </div>
+        </div>
+        
+        <div class="otp-footer">
+            <button id="verifyOtpBtn" class="btn-verify">Verify Code</button>
+            <div class="otp-resend">
+                <span>Didn't receive the code?</span>
+                <button id="resendOtpBtn" class="btn-resend" disabled>Resend Code (<span id="resendTimer">30</span>s)</button>
+            </div>
+        </div>
+        
+        <button class="otp-close" onclick="closeOtpModal()">&times;</button>
+    </div>
+</div>
+
+<style>
+/* OTP MODAL STYLES */
+.otp-modal {
+    display: none;
+    position: fixed;
+    z-index: 9999;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(26, 60, 143, 0.6);
+    backdrop-filter: blur(8px);
+    align-items: center;
+    justify-content: center;
+}
+
+.otp-modal-content {
+    background: white;
+    padding: 2.5rem;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 420px;
+    box-shadow: 0 15px 50px rgba(0,0,0,0.2);
+    position: relative;
+    text-align: center;
+    animation: modalSlideUp 0.4s ease;
+}
+
+@keyframes modalSlideUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.otp-header h2 {
+    font-family: 'Nunito', sans-serif;
+    color: #1a3c8f;
+    margin: 1rem 0 0.5rem;
+}
+
+.otp-header p {
+    color: #8090b0;
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.otp-icon {
+    font-size: 3rem;
+}
+
+.otp-input-container {
+    display: flex;
+    justify-content: space-between;
+    margin: 2rem 0;
+}
+
+.otp-input {
+    width: 50px;
+    height: 60px;
+    border: 2px solid #e8eef8;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1a3c8f;
+    background: #f0f7ff;
+    transition: 0.3s ease;
+}
+
+.otp-input:focus {
+    border-color: #00c9b1;
+    background: white;
+    box-shadow: 0 0 0 4px rgba(0,201,177,0.1);
+    outline: none;
+}
+
+.otp-error-msg {
+    color: #ff4d4d;
+    font-size: 0.85rem;
+    height: 20px;
+    margin-bottom: 1rem;
+}
+
+.otp-timer {
+    font-size: 0.9rem;
+    color: #8090b0;
+    margin-bottom: 1.5rem;
+}
+
+#countdown {
+    color: #1a3c8f;
+    font-weight: 700;
+}
+
+.btn-verify {
+    width: 100%;
+    padding: 0.85rem;
+    background: #00c9b1;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: 0.3s ease;
+}
+
+.btn-verify:hover {
+    background: #00b09c;
+    transform: translateY(-2px);
+}
+
+.otp-resend {
+    margin-top: 1.5rem;
+    font-size: 0.85rem;
+    color: #8090b0;
+}
+
+.btn-resend {
+    background: none;
+    border: none;
+    color: #0099e6;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 0.2rem 0.5rem;
+    transition: 0.3s ease;
+}
+
+.btn-resend:disabled {
+    color: #ccc;
+    cursor: not-allowed;
+}
+
+.otp-close {
+    position: absolute;
+    right: 1.5rem;
+    top: 1.5rem;
+    font-size: 1.5rem;
+    background: none;
+    border: none;
+    color: #8090b0;
+    cursor: pointer;
+}
+</style>

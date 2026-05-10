@@ -1,0 +1,155 @@
+{% extends "base_public.html" %}
+{% block title %}VetSync Clinic - Home{% endblock %}
+
+{% block content %}
+<style>
+    .btn-book-big {
+        display: inline-block;
+        background-color: #1fa6dc;
+        color: white;
+        padding: 14px 28px;
+        font-size: 1.15rem;
+        font-weight: 800;
+        border-radius: 12px;
+        text-decoration: none;
+        box-shadow: 0 4px 15px rgba(31, 166, 220, 0.4);
+        transition: all 0.3s ease;
+        margin-top: 15px;
+        letter-spacing: 0.5px;
+    }
+    .btn-book-big:hover {
+        background-color: #158bb9;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(31, 166, 220, 0.6);
+        color: white;
+    }
+</style>
+
+<!-- HERO SECTION -->
+<section class="hero">
+    <div class="hero-bg-pattern"></div>
+    <div class="hero-container">
+        <div class="hero-content">
+            <div class="hero-text" id="heroTextSection">
+                <h1 class="hero-title">Welcome to<br><span>VetSync Clinic</span></h1>
+                <p class="hero-desc">VetSync is a modern veterinary clinic management system that makes pet care effortless. Pet owners can easily book appointments 24/7, manage pet records, and view exclusive offers—all in one convenient platform.</p>
+            </div>
+            
+            <div class="hero-btns" id="heroActionButtons">
+                <a href="#book" class="btn-primary hero-action-book">Book Now</a>
+                <a href="{{ url_for('main.services_page') }}" class="btn-secondary hero-action-services">Our Services</a>
+                <a href="{{ url_for('main.about') }}" class="btn-secondary hero-action-about">Know More</a>
+                <a href="{{ url_for('vetscan.vetscan') }}" class="btn-secondary hero-action-vetscan">Vet Scan</a>
+            </div>
+        </div>
+
+        <div class="hero-image" id="heroVisual">
+            <div class="hero-img-placeholder">
+                <div class="hero-circle"></div>
+                <img src="{{ url_for('static', filename='images/vet-dog.png') }}"
+                        alt="Vet with dog" class="hero-real-img hero-img-main">
+                <img src="{{ url_for('static', filename='images/kitten.png') }}"
+                        alt="Kitten" class="hero-real-img hero-img-cat">
+            </div>
+        </div>
+    </div>
+    <div class="hero-wave">
+        <svg viewBox="0 0 1440 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M0,40 C360,80 1080,0 1440,40 L1440,80 L0,80 Z" fill="#f0f7ff"/>
+        </svg>
+    </div>
+</section>
+
+<!-- BOOK NOW SECTION -->
+<section class="book-section" id="book">
+    <div class="book-container">
+        <div class="book-label">
+            <h2>Book<br>Now!</h2>
+        </div>
+        <div class="book-cta-wrap">
+            <p class="book-cta-desc">Choose your preferred service, date, and time. Our team will be ready for you and your pet.</p>
+            {% if current_user %}
+                <a href="{{ url_for('booking.booking_page') }}" class="btn-book-big">📅 Book an Appointment</a>
+            {% else %}
+                <a href="{{ url_for('auth.login', next=url_for('booking.booking_page')) }}" class="btn-book-big">📅 Book an Appointment</a>
+                <p class="book-login-note">You need to <a href="{{ url_for('auth.login', next=url_for('booking.booking_page')) }}">log in</a> or <a href="{{ url_for('auth.signup') }}">sign up</a> to book an appointment.</p>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<!-- SERVICES SECTION -->
+<section class="services-section" id="services">
+    <div class="services-container">
+        <h2 class="section-title">Services</h2>
+        <div class="services-grid">
+            {% for svc in services %}
+            <div class="service-card" {{ 'style="animation-delay: ' ~ (loop.index0 * 0.1) ~ 's"' | safe }}>
+                <div class="service-icon">{{ svc.icon }}</div>
+                <h3>{{ svc.name }}</h3>
+                <p>{{ svc.desc }}</p>
+                <a href="{{ url_for('booking.booking_page') }}" class="service-link">Book This Service</a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- ABOUT SECTION -->
+<section class="about-section" id="about">
+    <div class="about-container">
+        <div class="about-image">
+            <div class="about-img-wrap">
+                <img src="{{ url_for('static', filename='images/kitten.png') }}"
+                     alt="Cute kitten" class="about-real-img">
+            </div>
+        </div>
+        <div class="about-content">
+            <h2>Know more About Us</h2>
+            <div class="about-years">
+                <span class="years-num">20+</span>
+                <span class="years-label">Yrs</span>
+                <p>With over 20 years of trusted veterinary experience, VetSync is dedicated to providing exceptional care for your beloved pets.</p>
+            </div>
+            <p class="about-desc">From routine check-ups to pet emergencies, we combine modern technology with compassionate expertise to make pet healthcare simple, accessible, and stress-free.</p>
+            <div class="about-review">
+                <div class="reviewer-avatars">
+                    <span class="avatar">👩</span>
+                    <span class="avatar">👨</span>
+                    <span class="avatar">👩</span>
+                    <span class="avatar">👨</span>
+                    <span class="avatar">👩</span>
+                </div>
+                <div class="stars">⭐⭐⭐⭐⭐</div>
+                <p class="review-text">"Exceptional care for our pets!"</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- PET EMERGENCIES SECTION -->
+<section class="emergency-section">
+    <div class="emergency-container">
+        <div class="emergency-content">
+            <h2>Pet Emergencies</h2>
+            <h3>What you need to know</h3>
+            <div class="emergency-grid">
+                <div class="emergency-col">
+                    <p>Whether it’s booking an appointment, accessing medical records, or getting urgent help — we’re here to support you and your pet every step of the way.</p>
+                </div>
+                <div class="emergency-col">
+                    <p>At VetSync, we understand that pet emergencies can happen at any time.
+Our clinic provides 24/7 emergency support for urgent cases. If your pet is showing signs of distress such as severe vomiting, difficulty breathing, sudden collapse, uncontrolled bleeding, or seizures, please contact us immediately.</p>
+                </div>
+            </div>
+            <a href="{{ url_for('main.contact') }}" class="btn-emergency">Contact Emergency Line</a>
+        </div>
+        <div class="emergency-image">
+            <div class="emergency-blob"></div>
+            <img src="{{ url_for('static', filename='images/girl-dog.png') }}"
+                 alt="Person with dog" class="emergency-real-img">
+        </div>
+    </div>
+</section>
+
+{% endblock %}

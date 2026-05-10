@@ -1,0 +1,559 @@
+<style>
+  /* Chatbot Base Styles */
+  #chatbot-container * {
+    box-sizing: border-box;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  /* Floating Button */
+  #chatbot-toggle-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background-color: #0ea5e9; /* Bright Blue */
+    color: white;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: none;
+    box-shadow:
+      0 10px 15px -3px rgba(3, 105, 161, 0.4),
+      0 4px 6px -2px rgba(3, 105, 161, 0.2);
+    cursor: pointer;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  #chatbot-toggle-btn:hover {
+    background-color: #0284c7;
+    transform: scale(1.08) translateY(-4px);
+    box-shadow:
+      0 20px 25px -5px rgba(3, 105, 161, 0.5),
+      0 10px 10px -5px rgba(3, 105, 161, 0.3);
+  }
+
+  #chatbot-toggle-btn svg {
+    width: 32px;
+    height: 32px;
+    fill: currentColor;
+  }
+
+  /* Chat Window */
+  #chatbot-window {
+    position: fixed;
+    bottom: 104px;
+    right: 24px;
+    width: 400px;
+    height: 520px;
+    background-color: #f0f9ff; /* very light sky blue */
+    border-radius: 20px;
+    box-shadow:
+      0 25px 50px -12px rgba(3, 105, 161, 0.3),
+      0 0 20px rgba(14, 165, 233, 0.05) inset;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+    z-index: 1000;
+    transition:
+      opacity 0.3s ease,
+      transform 0.3s ease;
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  #chatbot-window.open {
+    display: flex;
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Header */
+  #chatbot-header {
+    background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+    padding: 18px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+  }
+
+  .chatbot-header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .chatbot-avatar {
+    width: 42px;
+    height: 42px;
+    background-color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .chatbot-avatar img {
+    border-radius: 50%;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .chatbot-title-container {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .chatbot-title {
+    color: white;
+    font-weight: 700;
+    margin: 0;
+    font-size: 16px;
+    letter-spacing: 0.5px;
+  }
+
+  .chatbot-subtitle {
+    color: #e0f2fe;
+    font-size: 12px;
+    margin: 0;
+    font-weight: 400;
+  }
+
+  #chatbot-close-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 20px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+  }
+
+  #chatbot-close-btn:hover {
+    background: rgba(255, 255, 255, 0.4);
+    transform: rotate(90deg);
+  }
+
+  /* Main Body Panel */
+  #chatbot-body {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Quick Replies List Area */
+  #chatbot-options {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .quick-reply-label {
+    font-size: 16px;
+    color: #0369a1;
+    margin-bottom: 4px;
+    font-weight: 700;
+    text-align: center;
+  }
+
+  /* 2 Column Grid for buttons */
+  #quick-replies-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .quick-reply-btn {
+    background-color: white;
+    color: #0284c7;
+    border: 1px solid #bae6fd;
+    border-radius: 14px;
+    padding: 16px 18px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    font-weight: 600;
+    width: 100%;
+    box-shadow: 0 4px 6px rgba(3, 105, 161, 0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+  }
+
+  .quick-reply-btn:hover {
+    background-color: #0ea5e9;
+    color: white;
+    border-color: #0ea5e9;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 15px -3px rgba(3, 105, 161, 0.25);
+  }
+
+  /* Answer Display Area */
+  #chatbot-answer {
+    display: none;
+    flex-direction: column;
+    background-color: white;
+    border-radius: 16px;
+    border: 1px solid #e0f2fe;
+    box-shadow: 0 8px 16px -4px rgba(3, 105, 161, 0.1);
+    overflow: hidden;
+  }
+
+  #chatbot-answer-header {
+    background-color: #e0f2fe;
+    padding: 16px 20px;
+    border-bottom: 1px solid #bae6fd;
+  }
+
+  #chatbot-answer-title {
+    color: #0369a1;
+    font-size: 16px;
+    font-weight: 700;
+    margin: 0;
+  }
+
+  #chatbot-answer-content {
+    padding: 20px;
+  }
+
+  #chatbot-answer-text {
+    color: #1e3a8a;
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 0;
+  }
+
+  /* Rich text formatting applied from API */
+  #chatbot-answer-text strong {
+    color: #0284c7;
+  }
+
+  #chatbot-answer-text ol,
+  #chatbot-answer-text ul {
+    padding-left: 20px;
+    margin-top: 12px;
+    margin-bottom: 12px;
+  }
+
+  #chatbot-answer-text li {
+    margin-bottom: 8px;
+  }
+
+  #chatbot-answer-text em {
+    display: block;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px dashed #bae6fd;
+    color: #64748b;
+    font-size: 12px;
+    font-style: normal;
+  }
+
+  .btn-container {
+    padding: 0 20px 20px 20px;
+    display: flex;
+    justify-content: center;
+  }
+
+  #chatbot-back-btn {
+    background-color: white;
+    color: #0ea5e9;
+    border: 2px solid #0ea5e9;
+    border-radius: 999px; /* pill shape */
+    padding: 8px 24px;
+    font-size: 14px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  #chatbot-back-btn:hover {
+    background-color: #0ea5e9;
+    color: white;
+  }
+
+  /* Responsive */
+  @media (max-width: 480px) {
+    #chatbot-window {
+      width: calc(100% - 32px);
+      height: 65vh;
+      right: 16px;
+      bottom: 96px;
+    }
+
+    #quick-replies-container {
+      grid-template-columns: 1fr; /* single column on very small mobile */
+    }
+  }
+</style>
+
+<div id="chatbot-container">
+  <!-- Floating Chat Button -->
+  <button
+    id="chatbot-toggle-btn"
+    onclick="toggleChatbot()"
+    title="Need help? Ask ASTRID anything about VetSync!"
+  >
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path
+        d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"
+      />
+    </svg>
+  </button>
+
+  <!-- Chat Window -->
+  <div id="chatbot-window">
+    <!-- Header -->
+    <div id="chatbot-header">
+      <div class="chatbot-header-left">
+        <div class="chatbot-avatar">
+          <img
+            src="{{ url_for('static', filename='images/astrid.png') }}"
+            alt="ASTRID"
+          />
+        </div>
+        <div class="chatbot-title-container">
+          <h3 class="chatbot-title">ASTRID Assistant</h3>
+          <p class="chatbot-subtitle">Virtual Helper</p>
+        </div>
+      </div>
+      <button id="chatbot-close-btn" onclick="toggleChatbot()">&times;</button>
+    </div>
+
+    <!-- Main Body -->
+    <div id="chatbot-body">
+      <!-- Quick Replies View -->
+      <div id="chatbot-options">
+        <div class="quick-reply-label">How can I help you today?</div>
+        <div id="quick-replies-container">
+          <!-- Buttons injected via JS -->
+        </div>
+
+        <!-- Quick Queries Input -->
+        <div style="margin-top: 20px; padding-top: 16px; border-top: 1px dashed #bae6fd;">
+          <div class="quick-reply-label" style="font-size: 13px; color: #64748b; margin-bottom: 8px;">Or ask me a question:</div>
+          <form id="smart-chat-form" style="display: flex; gap: 8px;">
+            <input type="text" id="smart-chat-input" placeholder="e.g. How to book?" required style="
+                flex: 1;
+                padding: 12px;
+                border-radius: 12px;
+                border: 1px solid #bae6fd;
+                outline: none;
+                font-size: 13px;
+                background: white;
+              " />
+            <button type="submit" style="
+                background: #0ea5e9;
+                color: white;
+                border: none;
+                padding: 0 16px;
+                border-radius: 12px;
+                cursor: pointer;
+                font-weight: 600;
+                transition: all 0.2s;
+              " onmouseover="this.style.background='#0284c7'" onmouseout="this.style.background='#0ea5e9'">
+              Ask
+            </button>
+          </form>
+        </div>
+
+        <!-- VetScan Clickable Card -->
+        <a href="/vetscan" id="vetscan-card" style="
+          display: block;
+          margin-top: 14px;
+          padding: 14px 16px;
+          background: linear-gradient(135deg, #e0f2fe 0%, #f0f9ff 100%);
+          border: 2px solid #0ea5e9;
+          border-radius: 14px;
+          text-decoration: none;
+          cursor: pointer;
+          transition: all 0.25s ease;
+          box-shadow: 0 0 0 0 rgba(14,165,233,0.0);
+          position: relative;
+          overflow: hidden;
+        "
+        onmouseover="this.style.boxShadow='0 0 0 4px rgba(14,165,233,0.2)'; this.style.transform='translateY(-2px)';"
+        onmouseout="this.style.boxShadow='0 0 0 0 rgba(14,165,233,0)'; this.style.transform='translateY(0)';">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <span style="font-size:1.6rem; flex-shrink:0;">🐾</span>
+            <div>
+              <div style="font-size:14px; font-weight:700; color:#0369a1; margin-bottom:2px;">Use VetScan</div>
+              <div style="font-size:11px; color:#64748b; line-height:1.4;">For pet health concerns and emergency assessment</div>
+            </div>
+            <span style="margin-left:auto; font-size:1rem; color:#0ea5e9;">→</span>
+          </div>
+        </a>
+      </div>
+
+      <!-- Answer View -->
+      <div id="chatbot-answer">
+        <div id="chatbot-answer-header">
+          <h4 id="chatbot-answer-title"></h4>
+        </div>
+        <div id="chatbot-answer-content">
+          <div id="chatbot-answer-text">Loading...</div>
+        </div>
+        <div class="btn-container">
+          <button id="chatbot-back-btn" onclick="showOptions()">
+            <span>&#8592;</span> Back to Menu
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const quickReplies = [
+    "How to Sign Up",
+    "How to Log In",
+    "How to Book Appointment",
+    "What are the Offers?",
+    "How to View My Pets",
+    "How to Check Services",
+  ];
+
+  const chatbotWindow = document.getElementById("chatbot-window");
+  const optionsPanel = document.getElementById("chatbot-options");
+  const answerPanel = document.getElementById("chatbot-answer");
+
+  // Initialize exactly on load
+  document.addEventListener("DOMContentLoaded", () => {
+    renderQuickReplies();
+  });
+
+  function toggleChatbot() {
+    const isOpen = chatbotWindow.classList.contains("open");
+    if (isOpen) {
+      chatbotWindow.classList.remove("open");
+      setTimeout(() => {
+        chatbotWindow.style.display = "none";
+      }, 300); // match CSS transition
+    } else {
+      showOptions(); // Ensure we always open directly on options menu
+      chatbotWindow.style.display = "flex";
+      setTimeout(() => {
+        chatbotWindow.classList.add("open");
+      }, 10);
+    }
+  }
+
+  function renderQuickReplies() {
+    const container = document.getElementById("quick-replies-container");
+    container.innerHTML = "";
+    quickReplies.forEach((reply) => {
+      const btn = document.createElement("button");
+      btn.className = "quick-reply-btn";
+      btn.innerText = reply;
+      btn.onclick = () => fetchAnswer(reply);
+      container.appendChild(btn);
+    });
+  }
+
+  function showOptions() {
+    answerPanel.style.display = "none";
+    optionsPanel.style.display = "flex";
+  }
+
+  async function fetchAnswer(query) {
+    // Switch views
+    optionsPanel.style.display = "none";
+    answerPanel.style.display = "flex";
+
+    document.getElementById("chatbot-answer-title").innerText = query;
+    document.getElementById("chatbot-answer-text").innerHTML =
+      "<div style='text-align: center; color: #9CA3AF;'>Fetching answer...</div>";
+
+    try {
+      // Hit backend endpoint for the smart reply
+      const response = await fetch("/api/v1/chatbot/astrid", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRF-Token": "{{ csrf_token() }}"
+        },
+        body: JSON.stringify({ message: query }),
+      });
+
+      const data = await response.json();
+
+      setTimeout(() => {
+        const textContainer = document.getElementById("chatbot-answer-text");
+
+        if (data.mode === "vetscan_redirect") {
+          // ── VetScan Redirect Card ────────────────────────────────────────
+          document.getElementById("chatbot-answer-title").innerText = "🐾 VetScan Recommendation";
+          textContainer.innerHTML = `
+            <div style="text-align:center; padding: 8px 0 16px;">
+              <div style="font-size:2.8rem; margin-bottom:12px;">🐾</div>
+              <p style="font-size:14px; color:#1e3a8a; font-weight:600; margin-bottom:8px;">
+                It looks like your concern is related to your pet&rsquo;s health.
+              </p>
+              <p style="font-size:13px; color:#475569; margin-bottom:20px; line-height:1.6;">
+                For an accurate assessment, please use <strong>VetScan</strong> &mdash;
+                our dedicated animal health tool powered by clinical data.
+              </p>
+              <a href="/vetscan"
+                 style="
+                   display:inline-block;
+                   background: linear-gradient(135deg,#0ea5e9,#0284c7);
+                   color:white;
+                   padding:12px 28px;
+                   border-radius:999px;
+                   font-weight:700;
+                   font-size:14px;
+                   text-decoration:none;
+                   box-shadow:0 4px 14px rgba(14,165,233,0.4);
+                   transition:transform 0.2s;
+                 "
+                 onmouseover="this.style.transform='translateY(-2px)'"
+                 onmouseout="this.style.transform='translateY(0)'"
+              >👉 Start VetScan Now</a>
+              <p style="font-size:11px; color:#94a3b8; margin-top:16px;">
+                ASTRID does not diagnose or suggest treatments.
+              </p>
+            </div>
+          `;
+        } else if (data.mode === "scripted") {
+          textContainer.innerHTML = data.reply;
+        } else {
+          textContainer.innerHTML = data.reply || "Unable to determine response.";
+        }
+      }, 300);
+    } catch (error) {
+      console.error("Chat error:", error);
+      document.getElementById("chatbot-answer-text").innerHTML =
+        "Sorry, I'm having trouble connecting right now. Please try again later.";
+    }
+  }
+
+  // Re-enable form handler for manual queries
+  document.getElementById("smart-chat-form").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const input = document.getElementById("smart-chat-input").value;
+    if (input.trim()) {
+      fetchAnswer(input);
+      document.getElementById("smart-chat-input").value = "";
+    }
+  });
+</script>

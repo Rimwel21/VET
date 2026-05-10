@@ -1,0 +1,281 @@
+{% extends "base_staff.html" %}
+{% block title %}Submit Report - VetSync{% endblock %}
+
+{% block content %}
+<style>
+    .report-container {
+        max-width: 1200px;
+        margin: 100px auto 40px;
+        padding: 0 20px;
+        display: flex;
+        gap: 30px;
+    }
+
+    .report-form {
+        width: 35%;
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 16px;
+        padding: 30px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        align-self: flex-start;
+    }
+
+    .report-list {
+        width: 65%;
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 16px;
+        padding: 30px;
+        height: 700px;
+        overflow-y: auto;
+    }
+
+    .report-card {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 15px;
+        border: 1px solid #E2E8F0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+
+    .report-card h4 {
+        margin: 0 0 10px 0;
+        font-size: 18px;
+        color: #1E293B;
+    }
+
+    .report-card p {
+        margin: 0 0 15px 0;
+        color: #64748B;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .status-pill {
+        font-size: 11px;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        display: inline-block;
+        margin-bottom: 10px;
+    }
+    .status-pending { background: #FEF9C3; color: #854D0E; }
+    .status-reviewed { background: #DBEAFE; color: #1E40AF; }
+    .status-resolved { background: #DCFCE7; color: #166534; }
+    .status-needs_action { background: #FEE2E2; color: #991B1B; }
+
+    .admin-feedback {
+        background: #F0F9FF;
+        border: 1px solid #BAE6FD;
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        font-size: 14px;
+        color: #0369A1;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: #1E293B;
+        margin-bottom: 8px;
+    }
+
+    .form-group input, .form-group textarea, .form-group select {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        font-size: 15px;
+        font-family: inherit;
+    }
+
+    .submit-btn {
+        background: #0EA5E9;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 700;
+        cursor: pointer;
+        width: 100%;
+        font-size: 16px;
+    }
+
+    @media (max-width: 768px) {
+        .report-container {
+            flex-direction: column;
+        }
+        .report-list,
+        .report-form {
+            width: 100%;
+        }
+        .report-list {
+            height: auto;
+        }
+    }
+</style>
+
+<div class="report-container">
+    <!-- SUBMIT FORM -->
+    <div class="report-form">
+        <h2 id="formTitle" style="margin-top:0; color:#1E293B;">Submit Report</h2>
+        <form id="submissionForm">
+            <input type="hidden" id="editReportId">
+            <div class="form-group">
+                <label>Report Title</label>
+                <input type="text" id="repTitle" placeholder="e.g. Broken Equipment" required>
+            </div>
+            <div class="form-group">
+                <label>Category</label>
+                <select id="repCat" required>
+                    <option value="Daily Summary">Daily Summary</option>
+                    <option value="Incident">Incident Report</option>
+                    <option value="Patient Issue">Patient Issue</option>
+                    <option value="System Issue">System Issue</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Report Details</label>
+                <textarea id="repDesc" rows="6" placeholder="Provide full context here..." required></textarea>
+            </div>
+            <button type="submit" class="submit-btn" id="submitBtn">Submit Report</button>
+            <button type="button" class="submit-btn" id="cancelEditBtn" style="display:none; background:#94A3B8; margin-top:10px;" onclick="cancelEdit()">Cancel Edit</button>
+        </form>
+    </div>
+
+    <!-- VIEW ONLY -->
+    <div class="report-list">
+        <h3 style="margin-top:0; color:#1E293B; margin-bottom:20px;">Your Active Reports</h3>
+        
+        {% if reports %}
+            {% for report in reports %}
+            <div class="report-card" id="card-{{ report.id }}">
+                <span class="status-pill status-{{ report.status.lower() }}">{{ report.status }}</span>
+                <h4>{{ report.title }}</h4>
+                <p style="font-weight:600; font-size:12px; text-transform:uppercase; margin-bottom:10px;">{{ report.category }} • {{ report.created_at.strftime('%b %d, %Y') }}</p>
+                <p class="rep-content">{{ report.description }}</p>
+
+                {% if report.admin_comment or (report.admin_review_status and report.admin_review_status != 'pending') %}
+                <div class="admin-feedback">
+                    <strong>Admin Feedback ({{ report.admin_review_status|title }}):</strong><br>
+                    {{ report.admin_comment if report.admin_comment else 'No additional comments.' }}
+                </div>
+                {% endif %}
+
+                <div style="display:flex; gap:15px; margin-top:15px; border-top:1px solid #F1F5F9; padding-top:15px;">
+                    <a href="javascript:void(0)" onclick="loadEditForm({{ report.id }})" style="color:#0EA5E9; font-weight:700; text-decoration:none; font-size:14px;">Edit Report</a>
+                    <span style="color:#94A3B8; font-size:14px;">(View Only)</span>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p style="color:#64748B;">You have no active reports.</p>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    function loadEditForm(id) {
+        const card = document.getElementById('card-' + id);
+        if (!card) return;
+
+        const title = card.querySelector('h4').innerText;
+        const categoryText = card.querySelector('p').innerText.split(' • ')[0].trim();
+        const content = card.querySelector('.rep-content').innerText;
+
+        document.getElementById('editReportId').value = id;
+        document.getElementById('repTitle').value = title;
+        
+        // Find matching option
+        const catSelect = document.getElementById('repCat');
+        for (let i=0; i<catSelect.options.length; i++) {
+            if (catSelect.options[i].text === categoryText || catSelect.options[i].value === categoryText) {
+                catSelect.selectedIndex = i;
+                break;
+            }
+        }
+
+        document.getElementById('repDesc').value = content;
+        document.getElementById('formTitle').innerText = "Edit Report";
+        document.getElementById('submitBtn').innerText = "Save Changes";
+        document.getElementById('cancelEditBtn').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function cancelEdit() {
+        document.getElementById('editReportId').value = '';
+        document.getElementById('submissionForm').reset();
+        document.getElementById('formTitle').innerText = "Submit Report";
+        document.getElementById('submitBtn').innerText = "Submit Report";
+        document.getElementById('cancelEditBtn').style.display = 'none';
+    }
+
+    document.getElementById('submissionForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const btn = document.getElementById('submitBtn');
+        if (btn.disabled) return;
+
+        const id = document.getElementById('editReportId').value;
+        const payload = {
+            title: document.getElementById('repTitle').value,
+            category: document.getElementById('repCat').value,
+            content: document.getElementById('repDesc').value,
+            description: document.getElementById('repDesc').value
+        };
+
+        try {
+            btn.disabled = true;
+            btn.innerText = 'Processing...';
+
+            let url, method;
+            if (id) {
+                // Editing existing report
+                url = `/staff/reports/edit/${id}`;
+                method = 'POST';
+            } else {
+                // New report
+                url = `/api/v1/reports`;
+                method = 'POST';
+            }
+
+            const token = localStorage.getItem('access_token');
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+            
+            const res = await fetch(url, {
+                method: method,
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': token ? `Bearer ${token}` : '',
+                    'X-CSRF-Token': csrfToken
+                },
+                body: JSON.stringify(payload)
+            });
+            
+            if (res.ok || res.redirected) {
+                alert(id ? "Report updated successfully!" : "Report submitted successfully!");
+                location.reload();
+            } else {
+                alert("Failed to process request.");
+                btn.disabled = false;
+                btn.innerText = id ? "Save Changes" : "Submit Report";
+            }
+        } catch (error) {
+            console.error(error);
+            alert("An error occurred.");
+            btn.disabled = false;
+            btn.innerText = id ? "Save Changes" : "Submit Report";
+        }
+    });
+</script>
+{% endblock %}

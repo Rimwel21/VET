@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#1a3c8f" />
+    <title>{% block title %}VetSync Clinic{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='2.9') }}" />
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}" />
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/pwa-icon-192.png') }}" />
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/pwa-icon-180.png') }}" />
+    {% block extra_css %}{% endblock %}
+  </head>
+  <body>
+    <div class="blur-overlay" id="blurOverlay"></div>
+
+    {# ROLE-BASED NAVIGATION DISPATCHER #}
+    <nav class="navbar" id="navbar">
+      <div class="nav-container">
+        {% if current_user and current_user.role == 'admin' %}
+          {# ADMIN BRAND #}
+          <a class="nav-logo" href="{{ url_for('dashboard.admin_dashboard') }}">
+            <span class="logo-icon">🛡️</span> <span class="logo-text">Admin Panel</span>
+          </a>
+          <ul class="nav-links">
+            <li><a href="{{ url_for('dashboard.admin_dashboard') }}" class="{% if request.endpoint == 'dashboard.admin_dashboard' %}active{% endif %}">Dashboard</a></li>
+            <li><a href="{{ url_for('dashboard.admin_dashboard') }}#user-management">Users</a></li>
+            <li><a href="{{ url_for('dashboard.admin_dashboard') }}#system-monitoring">Monitoring</a></li>
+            <li><a href="{{ url_for('dashboard.admin_dashboard') }}#clinical-reports">Reports</a></li>
+            <li><a href="{{ url_for('staff.audit_logs') }}" class="{% if request.endpoint == 'staff.audit_logs' %}active{% endif %}">Audit Log</a></li>
+          </ul>
+        {% elif current_user and current_user.role == 'staff' %}
+          {# STAFF BRAND #}
+          <a class="nav-logo" href="{{ url_for('dashboard.staff_dashboard') }}">
+            <span class="logo-icon">🩺</span> <span class="logo-text">Staff Workspace</span>
+          </a>
+          <ul class="nav-links">
+            <li><a href="{{ url_for('dashboard.staff_dashboard') }}" class="{% if request.endpoint == 'dashboard.staff_dashboard' %}active{% endif %}">Dashboard</a></li>
+            <li><a href="{{ url_for('staff.appointments') }}" class="{% if request.endpoint == 'staff.appointments' %}active{% endif %}">Appointments</a></li>
+            <li><a href="{{ url_for('staff.submitted_reports') }}" class="{% if request.endpoint == 'staff.submitted_reports' %}active{% endif %}">Submit Report</a></li>
+            <li><a href="{{ url_for('staff.pet_records') }}" class="{% if request.endpoint == 'staff.pet_records' %}active{% endif %}">Pet Records</a></li>
+            <li><a href="{{ url_for('staff.control_panel') }}" class="{% if request.endpoint == 'staff.control_panel' %}active{% endif %}">Control Panel</a></li>
+          </ul>
+        {% else %}
+          {# PUBLIC / CLIENT BRAND #}
+          <a href="{{ url_for('main.index') }}" class="nav-logo">
+            <span class="logo-icon">🐾</span> <span class="logo-text">VetSync</span>
+          </a>
+          <ul class="nav-links" id="primary-navigation">
+            <li><a href="{{ url_for('main.index') }}" class="{% if request.endpoint == 'main.index' %}active{% endif %}">Home</a></li>
+            <li><a href="{{ url_for('main.about') }}" class="{% if request.endpoint == 'main.about' %}active{% endif %}">About</a></li>
+            <li><a href="{{ url_for('main.services_page') }}" class="{% if request.endpoint == 'main.services_page' %}active{% endif %}">Services</a></li>
+            <li><a href="{{ url_for('main.contact') }}" class="{% if request.endpoint == 'main.contact' %}active{% endif %}">Contacts</a></li>
+            {% if current_user and current_user.role == 'client' %}
+            <li><a href="{{ url_for('dashboard.client_dashboard') }}" class="nav-dashboard-link {% if 'dashboard' in request.endpoint %}active{% endif %}">📊 Dashboard</a></li>
+            {% endif %}
+
+            {# MOBILE-ONLY AUTH LINKS #}
+            <div class="nav-mobile-auth">
+              {% if not current_user %}
+                <a href="{{ url_for('auth.login') }}" class="btn-nav-outline mobile-nav-btn">Log In</a>
+                <a href="{{ url_for('auth.signup') }}" class="btn-nav-fill mobile-nav-btn">Sign Up</a>
+              {% else %}
+                <a href="{{ url_for('auth.logout') }}" class="btn-nav-logout mobile-nav-btn">🚪 Logout</a>
+              {% endif %}
+            </div>
+          </ul>
+        {% endif %}
+
+        {# SHARED AUTH AREA #}
+        <div class="nav-auth">
+          {% if not current_user %}
+            <a href="{{ url_for('auth.login') }}" class="btn-nav-outline">Log In</a>
+            <a href="{{ url_for('auth.signup') }}" class="btn-nav-fill">Sign Up</a>
+          {% else %}
+            <div class="nav-user-area">
+              <span class="nav-user-name">👋 {{ current_user.first_name }}</span>
+              <a href="{{ url_for('auth.logout') }}" class="btn-nav-logout">🚪 Logout</a>
+            </div>
+          {% endif %}
+        </div>
+        <button class="hamburger" type="button" onclick="toggleMenu()" aria-label="Menu">☰</button>
+      </div>
+    </nav>
+
+    {# MESSAGES #}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <div class="flash-container">
+        {% for category, message in messages %}
+        <div class="flash flash-{{ category }}">{{ message }} <button onclick="this.parentElement.remove()">×</button></div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    {% endwith %}
+
+    {# MAIN CONTENT - NO INLINE PADDING (let CSS handle it) #}
+    <main id="main-content">
+      {% block content %}{% endblock %}
+    </main>
+
+    {# FOOTER (only for public pages) #}
+    {% if not current_user or current_user.role == 'client' %}
+    <footer class="footer">
+      <div class="footer-container">
+        <div class="footer-brand">
+          <h2 class="footer-logo">Join our<br /><span>Community</span></h2>
+          <p>Get the scoop about events, promotions, and clinic updates.</p>
+        </div>
+        <div class="footer-links">
+          <div class="footer-col">
+            <h4>Company</h4>
+            <a href="{{ url_for('main.about') }}">About Us</a>
+            <a href="{{ url_for('main.services_page') }}">Services</a>
+          </div>
+          <div class="footer-col">
+            <h4>Contact</h4>
+            <p>hello@vetsync.com</p>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2024 VetSync Clinic. All rights reserved.</p>
+      </div>
+    </footer>
+    {% endif %}
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("{{ url_for('main.service_worker') }}", { scope: "/" });
+        });
+      }
+    </script>
+    {% block extra_js %}{% endblock %}
+    {% include 'chatbot.html' %}
+  </body>
+</html>

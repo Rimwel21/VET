@@ -1,0 +1,347 @@
+{% extends "base_client.html" %}
+{% block title %}My Dashboard - VetSync{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ===== DASHBOARD PAGE WRAPPER ===== */
+  body .dashboard-page {
+    display: flex;
+    justify-content: center;
+    background: #f0f5ff;
+    min-height: calc(100vh - 64px);
+    padding: 84px 20px 60px;
+    width: 100%;
+  }
+
+  body .dashboard-container {
+    width: 100%;
+    max-width: 1100px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  /* ===== CARDS ===== */
+  body .dash-card {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 28px;
+    box-shadow: 0 4px 20px rgba(26, 60, 143, 0.1);
+    border: 1px solid #dde8ff;
+    width: 100%;
+  }
+
+  /* ===== WELCOME CARD ===== */
+  body .dash-welcome h2 {
+    font-family: 'Nunito', sans-serif;
+    color: #1a3c8f;
+    font-size: 1.6rem;
+    margin-bottom: 20px;
+    font-weight: 800;
+  }
+
+  body .dash-profile {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  body .dash-avatar {
+    width: 68px;
+    height: 68px;
+    background: linear-gradient(135deg, #1a3c8f, #00c9b1);
+    color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    font-size: 1.6rem;
+    font-weight: 900;
+    flex-shrink: 0;
+    box-shadow: 0 6px 16px rgba(0, 201, 177, 0.3);
+  }
+
+  body .dash-info p {
+    margin: 4px 0;
+    color: #4a5568;
+    font-size: 0.95rem;
+  }
+
+  body .dash-info p b {
+    color: #1a202c;
+    font-size: 1.05rem;
+  }
+
+  /* ===== ACTION BUTTONS ===== */
+  body .dash-actions {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+  }
+
+  body .dash-actions a {
+    background: #00c9b1;
+    color: #ffffff;
+    padding: 12px 22px;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 0.92rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 201, 177, 0.25);
+  }
+
+  body .dash-actions a:hover {
+    background: #00b09c;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 201, 177, 0.35);
+    color: #ffffff;
+  }
+
+  /* ===== APPOINTMENTS CARD HEADER ===== */
+  body .dash-appts-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  body .dash-appts-header h3 {
+    font-family: 'Nunito', sans-serif;
+    color: #1a3c8f;
+    font-size: 1.25rem;
+    font-weight: 800;
+    margin: 0;
+  }
+
+  body .dash-count {
+    background: #e8f4ff;
+    color: #1a3c8f;
+    padding: 4px 14px;
+    border-radius: 20px;
+    font-size: 0.82rem;
+    font-weight: 700;
+  }
+
+  /* ===== TABLE ===== */
+  body .dash-table-wrapper {
+    overflow-x: auto;
+    border-radius: 10px;
+    border: 1px solid #dde8ff;
+  }
+
+  body table.dash-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #ffffff;
+    min-width: 680px;
+    table-layout: auto;
+  }
+
+  body table.dash-table thead {
+    background: #1a3c8f;
+  }
+
+  body table.dash-table thead th {
+    color: #ffffff;
+    padding: 15px 16px;
+    text-align: left;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: none;
+  }
+
+  body table.dash-table tbody td {
+    padding: 14px 16px;
+    border-bottom: 1px solid #eef2ff;
+    color: #2d3748;
+    font-size: 0.93rem;
+    vertical-align: middle;
+  }
+
+  body table.dash-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  body table.dash-table tbody tr:hover td {
+    background: #f0f7ff;
+  }
+
+  /* ===== STATUS BADGES ===== */
+  body .dash-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: capitalize;
+  }
+
+  body .dash-badge.status-confirmed { background: #d1fae5; color: #065f46; }
+  body .dash-badge.status-pending   { background: #fef3c7; color: #92400e; }
+  body .dash-badge.status-cancelled { background: #fee2e2; color: #991b1b; }
+  body .dash-badge.status-completed { background: #dbeafe; color: #1e40af; }
+
+  /* ===== CANCEL BUTTON ===== */
+  body .btn-cancel-appt {
+    background: #fff0f0;
+    color: #dc2626;
+    border: 1.5px solid #fecaca;
+    padding: 6px 14px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.82rem;
+    font-weight: 700;
+    transition: 0.2s ease;
+  }
+
+  body .btn-cancel-appt:hover {
+    background: #dc2626;
+    color: #ffffff;
+    border-color: #dc2626;
+  }
+
+  /* ===== LOGOUT BUTTON (matches staff/admin style) ===== */
+  .btn-logout-new {
+    background: #dc2626 !important;
+    color: #ffffff !important;
+    padding: 7px 18px !important;
+    border-radius: 8px !important;
+    font-weight: 700 !important;
+    font-size: 0.85rem !important;
+    text-decoration: none !important;
+    transition: 0.2s ease !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .btn-logout-new:hover {
+    background: #b91c1c !important;
+    transform: translateY(-1px) !important;
+    color: #ffffff !important;
+  }
+
+  .user-area {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .nav-username {
+    color: rgba(255,255,255,0.9);
+    font-weight: 600;
+    font-size: 0.88rem;
+  }
+
+  /* ===== EMPTY STATE ===== */
+  body .dash-empty {
+    text-align: center;
+    padding: 50px 20px;
+    color: #8090b0;
+  }
+
+  body .dash-empty p { font-size: 1rem; }
+  body .dash-empty a { color: #00c9b1; font-weight: 700; text-decoration: underline; }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 768px) {
+    body .dashboard-page { padding: 80px 12px 40px; }
+    body .dash-card { padding: 20px; }
+    body .dash-profile { flex-direction: column; text-align: center; }
+    body .dash-actions { flex-direction: column; }
+    body .dash-actions a { width: 100%; justify-content: center; }
+    body .dash-welcome h2 { text-align: center; font-size: 1.3rem; }
+    body .dash-appts-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-page">
+  <div class="dashboard-container">
+
+    <!-- WELCOME CARD -->
+    <div class="dash-card dash-welcome">
+      <h2>Welcome back, {{ user.first_name }} {{ user.last_name }}!</h2>
+      <div class="dash-profile">
+        <div class="dash-avatar">{{ user.first_name[0] }}{{ user.last_name[0] }}</div>
+        <div class="dash-info">
+          <p><b>{{ user.first_name }} {{ user.last_name }}</b></p>
+          <p>📧 {{ user.email }}</p>
+          {% if user.contact %}<p>📞 {{ user.contact }}</p>{% endif %}
+          <p>🗓️ Member since {{ user.created_at.strftime('%B %Y') }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- QUICK ACTIONS -->
+    <div class="dash-actions">
+      <a href="{{ url_for('booking.booking_page') }}">New Booking</a>
+    </div>
+
+    <!-- APPOINTMENTS CARD -->
+    <div class="dash-card">
+      <div class="dash-appts-header">
+        <h3>My Appointments</h3>
+        <span class="dash-count">{{ bookings|length }} total</span>
+      </div>
+
+      <div class="dash-table-wrapper">
+        {% if bookings %}
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Service</th>
+              <th>Pet</th>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in bookings %}
+            <tr>
+              <td><b>#{{ a.id }}</b></td>
+              <td>
+                {{ a.service_ref.icon if a.service_ref else '📋' }}
+                {{ a.service_ref.name if a.service_ref else 'General' }}
+              </td>
+              <td><b>{{ a.pet_name }}</b> ({{ a.pet_type }})</td>
+              <td>{{ a.date.strftime('%b %d, %Y') }}</td>
+              <td>{{ a.slot }}</td>
+              <td>
+                <span class="dash-badge status-{{ a.status }}">{{ a.status|capitalize }}</span>
+              </td>
+              <td>
+                {% if a.status == 'pending' %}
+                <form action="{{ url_for('booking.cancel_booking', bid=a.id) }}" method="POST"
+                      onsubmit="return confirm('Cancel this appointment?')">
+                  <button type="submit" class="btn-cancel-appt">Cancel</button>
+                </form>
+                {% else %}
+                <span style="color:#aaa;font-size:0.85rem;">—</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        {% else %}
+        <div class="dash-empty">
+          <p>No appointments yet. <a href="{{ url_for('booking.booking_page') }}">Book your first visit →</a></p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

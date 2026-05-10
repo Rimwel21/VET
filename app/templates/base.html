@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#1a3c8f" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="VetSync" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>{% block title %}VetSync Clinic{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css', v='2.4') }}"
+    />
+    <link
+      rel="manifest"
+      href="{{ url_for('static', filename='manifest.json') }}"
+    />
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/pwa-icon-192.png') }}" />
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/pwa-icon-180.png') }}" />
+    {% block extra_css %}{% endblock %}
+    <style>
+      .btn-book {
+          display: inline-block;
+          padding: 10px 18px;
+          background: #1fa6dc;
+          color: white;
+          border-radius: 8px;
+          text-decoration: none;
+          font-weight: 700;
+      }
+      .btn-book:hover {
+          background: #158bb9;
+      }
+    </style>
+  </head>
+
+  <body>
+    <a href="#main-content" class="skip-link">Skip to content</a>
+    <div class="blur-overlay" id="blurOverlay"></div>
+    <!-- NAVBAR -->
+    <nav class="navbar" id="navbar">
+      <div class="nav-container">
+        <a href="{{ url_for('main.index') }}" class="nav-logo">
+          <span class="logo-icon">🐾</span>
+          <span class="logo-text">VetSync</span>
+        </a>
+        <ul class="nav-links" id="primary-navigation">
+          <li>
+            <a
+              href="{{ url_for('main.index') }}"
+              class="{% if request.endpoint == 'main.index' %}active{% endif %}"
+              >Home</a
+            >
+          </li>
+          <li>
+            <a
+              href="{{ url_for('main.about') }}"
+              class="{% if request.endpoint == 'main.about' %}active{% endif %}"
+              >About</a
+            >
+          </li>
+          <li>
+            <a
+              href="{{ url_for('main.services_page') }}"
+              class="{% if request.endpoint == 'main.services_page' %}active{% endif %}"
+              >Services</a
+            >
+          </li>
+          <li>
+            <a
+              href="{{ url_for('main.contact') }}"
+              class="{% if request.endpoint == 'main.contact' %}active{% endif %}"
+              >Contacts</a
+            >
+          </li>
+          {% if current_user %}
+          <li>
+            <a
+              href="{{ url_for('dashboard.dashboard') }}"
+              class="nav-dashboard-link {% if 'dashboard' in request.endpoint %}active{% endif %}"
+            >📊 Dashboard</a>
+          </li>
+          {% endif %}
+
+
+          <!-- Mobile-only Auth Links -->
+          <li class="nav-mobile-auth">
+            {% if not current_user %}
+            <a
+              href="{{ url_for('auth.login') }}"
+              class="btn-nav-outline mobile-nav-btn"
+              >Log In</a
+            >
+            <a
+              href="{{ url_for('auth.signup') }}"
+              class="btn-nav-fill mobile-nav-btn"
+              >Sign Up</a
+            >
+            {% else %}
+            <a
+              href="{{ url_for('auth.logout') }}"
+              class="btn-nav-outline mobile-nav-btn"
+              style="border-color: #ef4444; color: #ef4444"
+              >Log Out</a
+            >
+            {% endif %}
+          </li>
+        </ul>
+        <div class="nav-auth">
+          {% if not current_user %}
+          <a href="{{ url_for('auth.login') }}" class="btn-nav-outline">Log In</a>
+          <a href="{{ url_for('auth.signup') }}" class="btn-nav-fill">Sign Up</a>
+          {% else %}
+          <div class="nav-user-area">
+            <span class="nav-user-name">👋 {{ current_user.first_name }}</span>
+            <a href="{{ url_for('auth.logout') }}" class="btn-nav-logout">🚪 Logout</a>
+          </div>
+          {% endif %}
+        </div>
+        <button class="hamburger" type="button" onclick="toggleMenu()" aria-label="Open navigation menu" aria-expanded="false" aria-controls="primary-navigation">☰</button>
+      </div>
+    </nav>
+
+    <!-- FLASH MESSAGES -->
+    {% with messages = get_flashed_messages(with_categories=true) %} {% if
+    messages %}
+    <div class="flash-container">
+      {% for category, message in messages %}
+      <div class="flash flash-{{ category }}">
+        {{ message }}
+        <button onclick="this.parentElement.remove()">×</button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %} {% endwith %}
+
+    <!-- MAIN CONTENT -->
+    <main id="main-content" tabindex="-1">{% block content %}{% endblock %}</main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <div class="footer-container">
+        <div class="footer-brand">
+          <h2 class="footer-logo">🐾 Join our<br /><span>Community</span></h2>
+          <p>Get the scoop about events, promotions, and clinic updates.</p>
+          <form class="footer-subscribe" action="#" method="POST">
+            <input type="email" placeholder="Enter your Email" required />
+            <button type="submit" class="btn-submit">Submit</button>
+          </form>
+          <div class="footer-socials">
+            <a href="#" class="social-icon linkedin">in</a>
+            <a href="#" class="social-icon facebook">f</a>
+            <a href="#" class="social-icon twitter">𝕏</a>
+            <a href="#" class="social-icon instagram">📷</a>
+          </div>
+        </div>
+        <div class="footer-links">
+          <div class="footer-col">
+            <h4>Contact Us</h4>
+            <p>📞 (123) 456-7890</p>
+            <p>📧 hello@vetsync.com</p>
+            <p>📍 123 Vet Street, City</p>
+          </div>
+          <div class="footer-col">
+            <h4>Company</h4>
+            <a href="{{ url_for('main.about') }}">About Us</a>
+            <a href="{{ url_for('main.services_page') }}">Services</a>
+            <a href="#">FAQ</a>
+          </div>
+          <div class="footer-col">
+            <h4>Get Care</h4>
+            {% if current_user %}
+            <a href="{{ url_for('booking.booking_page') }}">Book Now</a>
+            {% else %}
+            <a href="{{ url_for('auth.login', next=url_for('booking.booking_page')) }}"
+              >Book Now</a
+            >
+            {% endif %}
+            <a href="#">Emergency</a>
+            <a href="{{ url_for('main.contact') }}">Contact</a>
+          </div>
+        </div>
+        <div class="footer-phone">
+          <div class="phone-mockup">
+            <div class="phone-screen">
+              <div class="phone-app">
+                <div class="app-header">🐾 VetSync</div>
+                <div class="app-body">
+                  <div class="app-card">📅 Next Appt</div>
+                  <div class="app-card">🐶 My Pets</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2024 VetSync Clinic. All rights reserved.</p>
+      </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register(
+            "{{ url_for('main.service_worker') }}",
+            { scope: "/" },
+          );
+        });
+      }
+    </script>
+    <script src="{{ url_for('static', filename='js/push-notifications.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+
+    <!-- ASTRID Chatbot -->
+    {% include 'chatbot.html' %}
+  </body>
+</html>

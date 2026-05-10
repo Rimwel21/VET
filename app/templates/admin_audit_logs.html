@@ -1,0 +1,127 @@
+{% extends "base_admin.html" %}
+{% block title %}System Audit Logs - VetSync Admin{% endblock %}
+
+{% block content %}
+<style>
+    .audit-container {
+        max-width: 1200px;
+        margin: 100px auto 40px;
+        padding: 0 20px;
+    }
+    .audit-header {
+        margin-bottom: 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .audit-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .audit-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .audit-table th {
+        background: #F8FAFC;
+        padding: 15px 20px;
+        text-align: left;
+        font-size: 13px;
+        font-weight: 700;
+        color: #64748B;
+        text-transform: uppercase;
+        border-bottom: 1px solid #E2E8F0;
+    }
+    .audit-table td {
+        padding: 16px 20px;
+        border-bottom: 1px solid #F1F5F9;
+        font-size: 14px;
+        color: #1E293B;
+    }
+    .log-badge {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 8px;
+        text-transform: uppercase;
+    }
+    .type-security { background: #FEE2E2; color: #991B1B; }
+    .type-staff { background: #E0F2FE; color: #0369A1; }
+    .type-system { background: #F1F5F9; color: #475569; }
+</style>
+
+<div class="audit-container">
+    <div class="audit-header">
+        <div>
+            <h1 style="font-size: 28px; font-weight: 900; color: #1E293B;">System <span>Audit Logs</span></h1>
+            <p style="color: #64748B; font-size: 15px; margin-top: 5px;">Historical record of all system activity, staff actions, and security events.</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+            <button class="action-btn" style="background: white; border: 1px solid #E2E8F0; padding: 10px 18px; border-radius: 10px; font-weight: 600; cursor: pointer;">📥 Export CSV</button>
+            <button class="action-btn" style="background: #0EA5E9; color: white; border: none; padding: 10px 18px; border-radius: 10px; font-weight: 600; cursor: pointer;">🔄 Refresh Logs</button>
+        </div>
+    </div>
+
+    <div class="audit-card">
+        <table class="audit-table">
+            <thead>
+                <tr>
+                    <th>Timestamp</th>
+                    <th>User</th>
+                    <th>Action Type</th>
+                    <th>Description</th>
+                    <th>IP Address</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Mock Audit Data -->
+                <tr>
+                    <td style="color: #64748B;">2026-05-01 14:22:10</td>
+                    <td><strong>admin_test</strong></td>
+                    <td><span class="log-badge type-security">Login Failed</span></td>
+                    <td>Invalid password attempt for account <em>admin_test</em>.</td>
+                    <td style="font-family: monospace;">192.168.1.45</td>
+                </tr>
+                <tr>
+                    <td style="color: #64748B;">2026-05-01 13:45:05</td>
+                    <td><strong>Dr. Smith</strong></td>
+                    <td><span class="log-badge type-staff">Booking Update</span></td>
+                    <td>Changed status of Booking #1042 to <em>Completed</em>.</td>
+                    <td style="font-family: monospace;">10.0.0.12</td>
+                </tr>
+                <tr>
+                    <td style="color: #64748B;">2026-05-01 12:00:00</td>
+                    <td><strong>System</strong></td>
+                    <td><span class="log-badge type-system">Backup</span></td>
+                    <td>Daily database backup completed successfully to cloud storage.</td>
+                    <td style="font-family: monospace;">internal</td>
+                </tr>
+                <tr>
+                    <td style="color: #64748B;">2026-05-01 10:05:32</td>
+                    <td><strong>Jane Doe</strong></td>
+                    <td><span class="log-badge type-security">Account Created</span></td>
+                    <td>Admin Jane Doe created new staff account: <em>vet_assistant_02</em>.</td>
+                    <td style="font-family: monospace;">192.168.1.10</td>
+                </tr>
+                <tr>
+                    <td style="color: #64748B;">2026-04-30 18:12:00</td>
+                    <td><strong>System</strong></td>
+                    <td><span class="log-badge type-system">Config Change</span></td>
+                    <td>Global setting <em>Push Notifications</em> changed from <em>Disabled</em> to <em>Enabled</em>.</td>
+                    <td style="font-family: monospace;">192.168.1.10</td>
+                </tr>
+                <tr>
+                    <td style="color: #64748B;">2026-04-30 16:45:12</td>
+                    <td><strong>Dr. Brown</strong></td>
+                    <td><span class="log-badge type-staff">Record Delete</span></td>
+                    <td>Staff Dr. Brown deleted archived pet record (ID: 442).</td>
+                    <td style="font-family: monospace;">10.0.0.15</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

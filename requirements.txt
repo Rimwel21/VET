@@ -1,0 +1,26 @@
+# ── VetSync Clinical Ecosystem ── Production Dependencies ──
+# Cleaned: 2026-04-28 | Python 3.10+
+
+# Core Framework
+Flask==3.0.0
+Flask-SQLAlchemy==3.1.1
+Flask-Migrate==4.0.5
+Flask-Mail
+psycopg2-binary
+
+# Authentication & Security
+PyJWT==2.8.0
+python-dotenv
+
+# Machine Learning (ASTRID Hybrid ML + VetScan)
+scikit-learn
+pandas
+numpy
+sentence-transformers
+datasets
+
+# Push Notifications (PWA)
+pywebpush==1.14.0
+
+# Production Server
+gunicorn

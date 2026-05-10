@@ -1,0 +1,144 @@
+{% extends "base_staff.html" %}
+{% block title %}Clinical Reports Hub - VetSync{% endblock %}
+
+{% block content %}
+<style>
+    .clinical-container {
+        max-width: 1200px;
+        margin: 100px auto 40px;
+        padding: 0 20px;
+    }
+    .hub-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 30px;
+    }
+    .hub-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    .hub-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        border-color: #0EA5E9;
+    }
+    .hub-icon {
+        width: 60px; height: 60px;
+        background: #F0F9FF;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 30px;
+    }
+    .hub-title {
+        font-size: 20px;
+        font-weight: 800;
+        color: #1E293B;
+    }
+    .hub-desc {
+        font-size: 14px;
+        color: #64748B;
+        line-height: 1.6;
+    }
+    .stat-row {
+        margin-top: auto;
+        padding-top: 20px;
+        border-top: 1px solid #F1F5F9;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .stat-pill {
+        font-size: 12px;
+        font-weight: 700;
+        color: #0EA5E9;
+        background: #E0F2FE;
+        padding: 4px 10px;
+        border-radius: 99px;
+    }
+</style>
+
+<div class="clinical-container">
+    <div style="margin-bottom: 40px;">
+        <h1 style="font-size: 32px; font-weight: 900; color: #1E293B; margin-bottom: 10px;">Clinical <span>Reports Hub</span></h1>
+        <p style="color: #64748B; font-size: 16px;">Central coordination center for clinical documentation and health outcomes monitoring.</p>
+    </div>
+
+    <div class="hub-grid">
+        <!-- Patient Outcome Summary -->
+        <div class="hub-card">
+            <div class="hub-icon">📈</div>
+            <h2 class="hub-title">Health Outcomes</h2>
+            <p class="hub-desc">Review aggregated patient recovery rates, treatment success metrics, and long-term health trends across the clinic.</p>
+            <div class="stat-row">
+                <span class="stat-pill">Updated 2h ago</span>
+                <span style="font-size: 13px; font-weight: 600; color: #64748B;">View Analytics →</span>
+            </div>
+        </div>
+
+        <!-- Treatment Protocols -->
+        <div class="hub-card">
+            <div class="hub-icon">📋</div>
+            <h2 class="hub-title">Protocol Audit</h2>
+            <p class="hub-desc">Review and audit clinical treatment protocols to ensure consistency with latest veterinary standards and clinic policy.</p>
+            <div class="stat-row">
+                <span class="stat-pill">12 Pending Review</span>
+                <span style="font-size: 13px; font-weight: 600; color: #64748B;">Audit Now →</span>
+            </div>
+        </div>
+
+        <!-- Incident Documentation -->
+        <div class="hub-card">
+            <div class="hub-icon">⚠️</div>
+            <h2 class="hub-title">Incident Analysis</h2>
+            <p class="hub-desc">Detailed analysis of clinical incidents, safety near-misses, and system feedback from staff and clients.</p>
+            <div class="stat-row">
+                <span class="stat-pill" style="background:#FEE2E2; color:#B91C1C;">4 Urgent Flags</span>
+                <span style="font-size: 13px; font-weight: 600; color: #64748B;">Open Tracker →</span>
+            </div>
+        </div>
+
+        <!-- Lab Results Overview -->
+        <div class="hub-card">
+            <div class="hub-icon">🔬</div>
+            <h2 class="hub-title">Diagnostic Accuracy</h2>
+            <p class="hub-desc">Monitor diagnostic lab turnaround times and result accuracy metrics to optimize clinical decision-making speed.</p>
+            <div class="stat-row">
+                <span class="stat-pill">98.5% Accuracy</span>
+                <span style="font-size: 13px; font-weight: 600; color: #64748B;">View Labs →</span>
+            </div>
+        </div>
+
+        <!-- Pharmacy & Supplies -->
+        <div class="hub-card">
+            <div class="hub-icon">💊</div>
+            <h2 class="hub-title">Clinical Pharmacy</h2>
+            <p class="hub-desc">Review medication dispensation logs, prescription trends, and pharmacy inventory audit reports.</p>
+            <div class="stat-row">
+                <span class="stat-pill">In Stock</span>
+                <span style="font-size: 13px; font-weight: 600; color: #64748B;">Inventory →</span>
+            </div>
+        </div>
+
+        <!-- Staff Performance -->
+        <div class="hub-card">
+            <div class="hub-icon">👨‍⚕️</div>
+            <h2 class="hub-title">Staff Clinical Activity</h2>
+            <p class="hub-desc">Monitor clinical workload distribution, treatment times, and documentation compliance across the veterinary team.</p>
+            <div class="stat-row">
+                <span class="stat-pill">High Compliance</span>
+                <span style="font-size: 13px; font-weight: 600; color: #64748B;">Performance →</span>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

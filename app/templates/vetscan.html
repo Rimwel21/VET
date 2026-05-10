@@ -1,0 +1,202 @@
+{% extends "base_public.html" %}
+{% block title %}VetScan - Animal Disease Predictor{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/vetscan.css') }}" />
+{% endblock %}
+
+{% block content %}
+<section class="vetscan-shell">
+  <div class="vetscan-container">
+    <div class="vetscan-topbar">
+      {% if current_user %}
+      <a href="{{ url_for('dashboard.dashboard') }}" class="vs-back-btn" aria-label="Back to dashboard">
+        <span aria-hidden="true">&larr;</span>
+        Back to Dashboard
+      </a>
+      {% else %}
+      <a href="{{ url_for('main.index') }}" class="vs-back-btn" aria-label="Back to home">
+        <span aria-hidden="true">&larr;</span>
+        Back to Home
+      </a>
+      {% endif %}
+
+      <div class="vs-model-stats" aria-label="VetScan model summary">
+        <span><strong>{{ meta.num_classes }}</strong> disease classes</span>
+        <span><strong>{{ meta.total_samples }}</strong> clinical records</span>
+      </div>
+    </div>
+
+    <header class="vetscan-hero">
+      <div>
+        <p class="vs-eyebrow">AI Clinical Assistant</p>
+        <h1>VetScan Disease Prediction</h1>
+        <p>
+          Enter the animal profile, vitals, and clinical signs to generate reference predictions
+          with confidence and severity indicators.
+        </p>
+      </div>
+      <div class="vs-hero-badge">
+        <span>Random Forest</span>
+        <strong>Ready</strong>
+      </div>
+    </header>
+
+    <div class="vetscan-grid">
+      <form class="vs-card vs-form-card" id="vetscan-form" onsubmit="event.preventDefault(); runPrediction();">
+        <div class="vs-card-header">
+          <div>
+            <p class="vs-section-kicker">Assessment</p>
+            <h2>Patient Information</h2>
+          </div>
+          <span class="vs-card-icon">VS</span>
+        </div>
+
+        <section class="vs-form-section">
+          <h3>Animal Information</h3>
+          <div class="vs-form-grid two">
+            <div class="vs-field">
+              <label for="animal_type">Animal Type</label>
+              <select id="animal_type" onchange="updateBreeds()">
+                {% for a in animal_types %}
+                <option value="{{ a }}">{{ a }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="vs-field">
+              <label for="breed">Breed</label>
+              <select id="breed">
+                {% for b in breeds_by_animal[animal_types[0]] %}
+                <option value="{{ b }}">{{ b }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <div class="vs-form-grid three">
+            <div class="vs-field">
+              <label for="age">Age (years)</label>
+              <input type="number" id="age" value="3" min="0" max="30" />
+            </div>
+            <div class="vs-field">
+              <label for="gender">Gender</label>
+              <select id="gender">
+                <option>Male</option>
+                <option>Female</option>
+              </select>
+            </div>
+            <div class="vs-field">
+              <label for="weight">Weight (kg)</label>
+              <input type="number" id="weight" value="20" step="0.5" min="0.1" max="1000" />
+            </div>
+          </div>
+        </section>
+
+        <section class="vs-form-section">
+          <h3>Vital Signs</h3>
+          <div class="vs-form-grid three">
+            <div class="vs-field">
+              <label for="body_temperature">Body Temperature (C)</label>
+              <input type="number" id="body_temperature" value="39.0" step="0.1" min="35" max="43" />
+            </div>
+            <div class="vs-field">
+              <label for="heart_rate">Heart Rate (bpm)</label>
+              <input type="number" id="heart_rate" value="100" min="30" max="220" />
+            </div>
+            <div class="vs-field">
+              <label for="duration">Duration of Illness</label>
+              <select id="duration">
+                <option value="1">1 day</option>
+                <option value="2">2 days</option>
+                <option value="3" selected>3 days</option>
+                <option value="5">5 days</option>
+                <option value="7">1 week</option>
+                <option value="10">10 days</option>
+                <option value="14">2 weeks</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <section class="vs-form-section">
+          <h3>Primary Symptoms</h3>
+          <div class="vs-form-grid two">
+            {% set sym_labels = ['Primary Symptom', 'Secondary Symptom', 'Symptom 3', 'Symptom 4'] %}
+            {% set sym_ids = ['symptom_1','symptom_2','symptom_3','symptom_4'] %}
+            {% for i in range(4) %}
+            <div class="vs-field">
+              <label for="{{ sym_ids[i] }}">{{ sym_labels[i] }}</label>
+              <select id="{{ sym_ids[i] }}">
+                {% for s in all_symptoms %}
+                <option value="{{ s }}" {% if loop.index == i+1 %}selected{% endif %}>{{ s }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            {% endfor %}
+          </div>
+        </section>
+
+        <section class="vs-form-section">
+          <h3>Clinical Signs</h3>
+          {% set signs = [
+            ('appetite_loss','Appetite Loss'),
+            ('vomiting','Vomiting'),
+            ('diarrhea','Diarrhea'),
+            ('coughing','Coughing'),
+            ('labored_breathing','Labored Breathing'),
+            ('lameness','Lameness'),
+            ('skin_lesions','Skin Lesions'),
+            ('nasal_discharge','Nasal Discharge'),
+            ('eye_discharge','Eye Discharge')
+          ] %}
+          <div class="vs-sign-grid">
+            {% for id, label in signs %}
+            <div class="vs-field">
+              <label>{{ label }}</label>
+              <div class="toggle-group" role="group" aria-label="{{ label }}">
+                <button type="button" class="toggle-btn active-yes" onclick="setToggle('{{ id }}', 'Yes', this)">Yes</button>
+                <button type="button" class="toggle-btn" onclick="setToggle('{{ id }}', 'No', this)">No</button>
+              </div>
+              <input type="hidden" id="{{ id }}" value="Yes" />
+            </div>
+            {% endfor %}
+          </div>
+        </section>
+
+        <div class="error-msg" id="error-msg" role="alert"></div>
+
+        <button class="predict-btn" id="predict-btn" type="submit">
+          <span class="btn-icon" aria-hidden="true">+</span>
+          Predict Disease
+        </button>
+      </form>
+
+      <aside class="vs-card vs-results-card" id="results-panel">
+        <div class="vs-card-header">
+          <div>
+            <p class="vs-section-kicker">Results</p>
+            <h2>Prediction Summary</h2>
+          </div>
+        </div>
+
+        <div class="results-placeholder" id="placeholder">
+          <div class="placeholder-mark">VS</div>
+          <p>Complete the assessment and run a prediction to view likely diseases, confidence scores, and severity levels.</p>
+        </div>
+        <div id="results-content" style="display:none"></div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<script id="breeds-data" type="application/json">
+  {{ breeds_by_animal | tojson | safe }}
+</script>
+<script>
+  const breedsByAnimal = JSON.parse(document.getElementById('breeds-data').textContent);
+</script>
+<script>
+  window.CSRF_TOKEN = "{{ csrf_token() }}";
+</script>
+<script src="{{ url_for('static', filename='js/vetscan.js', v='1.1') }}"></script>
+{% endblock %}

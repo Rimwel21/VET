@@ -1,0 +1,344 @@
+{% extends "base_staff.html" %}
+{% block title %}Pet Records - VetSync Clinic{% endblock %}
+
+{% block content %}
+<style>
+    .records-container {
+        max-width: 1240px;
+        margin: 100px auto 40px;
+        padding: 0 20px;
+    }
+    .records-header {
+        margin-bottom: 30px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+    }
+    .search-box {
+        padding: 12px 20px;
+        border: 1px solid #E2E8F0;
+        border-radius: 12px;
+        width: 100%;
+        max-width: 400px;
+        font-size: 15px;
+        outline: none;
+    }
+    .records-grid {
+        display: grid;
+        grid-template-columns: 350px 1fr;
+        gap: 30px;
+        align-items: start;
+    }
+    .pet-list {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 16px;
+        overflow: hidden;
+        height: 700px;
+        display: flex;
+        flex-direction: column;
+    }
+    .pet-list-header {
+        padding: 20px;
+        border-bottom: 1px solid #E2E8F0;
+        background: #F8FAFC;
+    }
+    .pet-items {
+        flex: 1;
+        overflow-y: auto;
+    }
+    .pet-item {
+        width: 100%;
+        padding: 16px 20px;
+        border: 0;
+        border-bottom: 1px solid #F1F5F9;
+        background: white;
+        cursor: pointer;
+        transition: background 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        text-align: left;
+    }
+    .pet-item:hover { background: #F0F9FF; }
+    .pet-item.active {
+        background: #E0F2FE;
+        box-shadow: inset 4px 0 0 #0EA5E9;
+    }
+    .pet-avatar-lg {
+        width: 48px;
+        height: 48px;
+        background: #F1F5F9;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        flex-shrink: 0;
+    }
+    .history-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 16px;
+        padding: 30px;
+        min-height: 500px;
+    }
+    .history-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 20px;
+        margin-bottom: 24px;
+    }
+    .history-meta {
+        text-align: right;
+        color: #64748B;
+        font-size: 14px;
+    }
+    .timeline {
+        position: relative;
+        padding-left: 30px;
+        margin-top: 20px;
+    }
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #E2E8F0;
+    }
+    .timeline-item {
+        position: relative;
+        margin-bottom: 24px;
+    }
+    .timeline-dot {
+        position: absolute;
+        left: -34px;
+        top: 4px;
+        width: 10px;
+        height: 10px;
+        background: #0EA5E9;
+        border-radius: 50%;
+        border: 2px solid white;
+        box-shadow: 0 0 0 2px #0EA5E9;
+    }
+    .timeline-date {
+        font-size: 13px;
+        font-weight: 600;
+        color: #64748B;
+        margin-bottom: 8px;
+    }
+    .timeline-content {
+        background: #F8FAFC;
+        padding: 16px;
+        border-radius: 12px;
+        border: 1px solid #E2E8F0;
+    }
+    .timeline-title {
+        font-weight: 700;
+        margin: 0 0 5px 0;
+        color: #1E293B;
+    }
+    .timeline-body {
+        font-size: 14px;
+        color: #475569;
+        margin-top: 8px;
+        line-height: 1.55;
+    }
+    .status-chip {
+        display: inline-flex;
+        padding: 3px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        background: #E2E8F0;
+        color: #475569;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #94A3B8;
+    }
+    .loading-state {
+        color: #64748B;
+        font-weight: 600;
+    }
+
+    @media (max-width: 900px) {
+        .records-container { margin-top: 80px; padding: 0 16px; }
+        .records-header { flex-direction: column; align-items: flex-start; }
+        .records-grid { grid-template-columns: 1fr; gap: 20px; }
+        .pet-list { height: 360px; }
+        .history-card { padding: 20px; min-height: auto; }
+        .history-head { flex-direction: column; }
+        .history-meta { text-align: left; }
+        .timeline { padding-left: 20px; }
+        .timeline-dot { left: -24px; }
+    }
+</style>
+
+<div class="records-container">
+    <div class="records-header">
+        <h1>Pet <span>Records</span></h1>
+        <input type="text" class="search-box" id="petSearch" placeholder="Search pet or owner name...">
+    </div>
+
+    <div class="records-grid">
+        <div class="pet-list">
+            <div class="pet-list-header">
+                <h3 style="margin:0;">Patients Directory</h3>
+            </div>
+            <div class="pet-items" id="petItemsList">
+                {% if pets %}
+                    {% for pet in pets %}
+                    <button
+                        type="button"
+                        class="pet-item"
+                        data-pet-id="{{ pet.pet_id }}"
+                        data-search="{{ (pet.name ~ ' ' ~ pet.owner)|lower }}"
+                    >
+                        <div class="pet-avatar-lg">
+                            {% set t = (pet.type or '').lower() %}
+                            {% if 'dog' in t %}🐶
+                            {% elif 'cat' in t %}🐱
+                            {% elif 'bird' in t %}🐦
+                            {% elif 'rabbit' in t %}🐰
+                            {% elif 'fish' in t %}🐟
+                            {% else %}🐾{% endif %}
+                        </div>
+                        <div>
+                            <div style="font-weight:700; font-size:16px;">{{ pet.name }}</div>
+                            <div style="font-size:12px; color:#64748B;">Owner: {{ pet.owner }}</div>
+                        </div>
+                    </button>
+                    {% endfor %}
+                {% else %}
+                    <p style="padding:20px; color:#64748B;">No records found.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="history-card" id="historyView">
+            <div class="empty-state">
+                <p style="font-size: 40px; margin-bottom: 20px;">Records</p>
+                <h3>Select a patient to view history</h3>
+                <p>Pet details, owner information, appointment history, and medical logs will appear here.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const petItems = Array.from(document.querySelectorAll('.pet-item'));
+    const historyView = document.getElementById('historyView');
+    const petSearch = document.getElementById('petSearch');
+
+    function renderEmptyHistory(message) {
+        historyView.innerHTML = `
+            <div class="empty-state">
+                <p style="font-size: 40px; margin-bottom: 20px;">Records</p>
+                <h3>No history found</h3>
+                <p>${message}</p>
+            </div>
+        `;
+    }
+
+    function renderLoading() {
+        historyView.innerHTML = `<div class="loading-state">Loading patient history...</div>`;
+    }
+
+    function getPetEmoji(type) {
+        const t = (type || '').toLowerCase();
+        if (t.includes('dog')) return '🐶';
+        if (t.includes('cat')) return '🐱';
+        if (t.includes('bird')) return '🐦';
+        if (t.includes('rabbit')) return '🐰';
+        if (t.includes('fish')) return '🐟';
+        return '🐾';
+    }
+
+    function renderHistory(data) {
+        const emoji = getPetEmoji(data.type);
+        const history = Array.isArray(data.history) ? data.history : [];
+        const timeline = history.length ? history.map((entry) => {
+            const dateObj = new Date(entry.date);
+            const dateStr = Number.isNaN(dateObj.getTime())
+                ? entry.date
+                : dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+            const notes = entry.notes ? `<div class="timeline-body"><strong>Notes:</strong> ${escapeHTML(entry.notes)}</div>` : '';
+            const diagnosis = entry.medical_history ? `<div class="timeline-body"><strong>Medical Log:</strong> ${escapeHTML(entry.medical_history)}</div>` : '';
+            const handler = entry.handled_by ? `<div class="timeline-body"><strong>Handled By:</strong> ${escapeHTML(entry.handled_by)}</div>` : '';
+
+            return `
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-date">${escapeHTML(dateStr)}</div>
+                    <div class="timeline-content">
+                        <div style="display:flex; justify-content:space-between; gap:12px; align-items:flex-start;">
+                            <h4 class="timeline-title">${escapeHTML(entry.service)}</h4>
+                            <span class="status-chip">${escapeHTML(entry.status)}</span>
+                        </div>
+                        <div class="timeline-body"><strong>Reason:</strong> ${escapeHTML(entry.reason || 'Not specified')}</div>
+                        ${diagnosis}
+                        ${notes}
+                        ${handler}
+                    </div>
+                </div>
+            `;
+        }).join('') : `<div class="empty-state" style="padding:30px 0 0;"><p>No medical history available for this patient.</p></div>`;
+
+        historyView.innerHTML = `
+            <div class="history-head">
+                <div style="display:flex; align-items:center; gap:15px;">
+                    <div style="font-size: 42px; background:#F8FAFC; width:72px; height:72px; display:flex; align-items:center; justify-content:center; border-radius:16px;">${emoji}</div>
+                    <div>
+                        <h2 style="margin:0; font-size:32px;">${escapeHTML(data.name)}</h2>
+                        <p style="margin:5px 0 0 0; color:#64748B; font-weight:600;">${data.type || 'Unknown type'} • ${data.breed || 'Unknown breed'}</p>
+                    </div>
+                </div>
+                <div class="history-meta">
+                    <div><strong>Owner:</strong> ${data.owner || 'Unknown owner'}</div>
+                    <div style="color:#0EA5E9; font-weight:600;">${data.email || ''}</div>
+                </div>
+            </div>
+            <h3 style="border-bottom: 1px solid #E2E8F0; padding-bottom: 10px; margin-top: 35px; margin-bottom: 25px; color:#1E293B;">Medical Timeline</h3>
+            <div class="timeline">${timeline}</div>
+        `;
+    }
+
+    async function loadPatientHistory(petId, item) {
+        petItems.forEach((node) => node.classList.remove('active'));
+        item.classList.add('active');
+        renderLoading();
+
+        try {
+            const response = await fetch(`/staff/pet-records/${petId}/history`);
+            if (!response.ok) {
+                renderEmptyHistory('No medical history available for this patient.');
+                return;
+            }
+
+            const data = await response.json();
+            renderHistory(data);
+        } catch (error) {
+            renderEmptyHistory('No medical history available for this patient.');
+        }
+    }
+
+    petItems.forEach((item) => {
+        item.addEventListener('click', () => loadPatientHistory(item.dataset.petId, item));
+    });
+
+    petSearch.addEventListener('input', (event) => {
+        const term = event.target.value.toLowerCase().trim();
+        petItems.forEach((item) => {
+            item.style.display = item.dataset.search.includes(term) ? 'flex' : 'none';
+        });
+    });
+</script>
+{% endblock %}

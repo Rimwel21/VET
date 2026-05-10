@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#1a3c8f" />
+    <title>{% block title %}Client Dashboard - VetSync{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='2.9') }}" />
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    {% block extra_css %}{% endblock %}
+  </head>
+  <body>
+    <div class="blur-overlay" id="blurOverlay"></div>
+    
+    <nav class="navbar" id="navbar">
+      <div class="nav-container">
+        <a href="{{ url_for('main.index') }}" class="nav-logo">
+          <span>🐾</span> <span class="logo-text">VetSync</span>
+        </a>
+        <ul class="nav-links" id="primary-navigation">
+          <li><a href="{{ url_for('main.index') }}" class="{% if request.endpoint == 'main.index' %}active{% endif %}">Home</a></li>
+          <li><a href="{{ url_for('main.about') }}" class="{% if request.endpoint == 'main.about' %}active{% endif %}">About</a></li>
+          <li><a href="{{ url_for('main.services_page') }}" class="{% if request.endpoint == 'main.services_page' %}active{% endif %}">Services</a></li>
+          <li><a href="{{ url_for('main.contact') }}" class="{% if request.endpoint == 'main.contact' %}active{% endif %}">Contacts</a></li>
+          <li><a href="{{ url_for('dashboard.client_dashboard') }}" class="nav-dashboard-link active">📊 Dashboard</a></li>
+        </ul>
+        <div class="nav-auth">
+          <div class="nav-user-area">
+            <span class="nav-user-name">👋 {{ current_user.first_name }}</span>
+            <a href="{{ url_for('auth.logout') }}" class="btn-nav-logout">🚪 Logout</a>
+          </div>
+        </div>
+        <button class="hamburger" type="button" onclick="toggleMenu()">☰</button>
+      </div>
+    </nav>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <div class="flash-container">
+        {% for category, message in messages %}
+        <div class="flash flash-{{ category }}">{{ message }} <button onclick="this.parentElement.remove()">×</button></div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    {% endwith %}
+
+    <main id="main-content">
+      {% block content %}{% endblock %}
+    </main>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+    {% include 'chatbot.html' %}
+  </body>
+</html>

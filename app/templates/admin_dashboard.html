@@ -1,0 +1,1197 @@
+{% extends "base_admin.html" %}
+{% block title %}Admin Dashboard - VetSync{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --admin-primary: #1a3c8f;
+        --admin-primary-mid: #1e5bbf;
+        --admin-accent: #00c9b1;
+        --admin-bg: #f0f7ff;
+        --admin-surface: rgba(255, 255, 255, 0.9);
+        --admin-border: #d9e6f7;
+        --admin-text: #1a202c;
+        --admin-muted: #8090b0;
+        --admin-shadow: 0 12px 48px rgba(26, 60, 143, 0.12);
+        --admin-radius: 16px;
+    }
+
+    body { background: var(--admin-bg); }
+
+    .admin-shell {
+        min-height: 100vh;
+        padding: 6rem 2rem 4rem;
+        background:
+            radial-gradient(circle at top right, rgba(0, 201, 177, 0.13), transparent 34rem),
+            linear-gradient(180deg, #f8fbff 0%, var(--admin-bg) 100%);
+    }
+
+    .admin-container {
+        max-width: 1280px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .admin-hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 1.5rem;
+        align-items: end;
+        padding: 2rem;
+        border-radius: var(--admin-radius);
+        background: linear-gradient(135deg, var(--admin-primary), var(--admin-primary-mid));
+        color: #fff;
+        box-shadow: var(--admin-shadow);
+        overflow: hidden;
+        position: relative;
+    }
+
+    .admin-hero::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(circle, rgba(255,255,255,0.28) 1px, transparent 1px);
+        background-size: 26px 26px;
+        opacity: 0.14;
+        pointer-events: none;
+    }
+
+    .admin-hero > * { position: relative; z-index: 1; }
+
+    .admin-eyebrow {
+        color: var(--admin-accent);
+        font-size: 0.75rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 0.35rem;
+    }
+
+    .admin-title {
+        font-family: 'Nunito', sans-serif;
+        font-size: clamp(2rem, 4vw, 3rem);
+        line-height: 1.1;
+        font-weight: 900;
+        margin: 0 0 0.55rem;
+    }
+
+    .admin-subtitle {
+        max-width: 680px;
+        color: rgba(255,255,255,0.78);
+        line-height: 1.65;
+    }
+
+    .admin-status-panel {
+        min-width: 230px;
+        padding: 1rem;
+        border: 1px solid rgba(255,255,255,0.24);
+        border-radius: var(--admin-radius);
+        background: rgba(255,255,255,0.12);
+        backdrop-filter: blur(12px);
+    }
+
+    .admin-status-panel span,
+    .admin-status-panel strong {
+        display: block;
+    }
+
+    .admin-status-panel span {
+        color: rgba(255,255,255,0.72);
+        font-size: 0.78rem;
+        margin-bottom: 0.3rem;
+    }
+
+    .admin-status-panel strong {
+        font-size: 1.1rem;
+        font-weight: 900;
+    }
+
+    .admin-module-nav {
+        display: flex;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        padding: 0.85rem;
+        border: 1px solid var(--admin-border);
+        border-radius: var(--admin-radius);
+        background: var(--admin-surface);
+        box-shadow: 0 8px 28px rgba(26, 60, 143, 0.08);
+        backdrop-filter: blur(12px);
+    }
+
+    .module-link {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.65rem 1rem;
+        border-radius: 999px;
+        color: var(--admin-primary);
+        font-size: 0.88rem;
+        font-weight: 800;
+        transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+    }
+
+    .module-link:hover {
+        background: rgba(26, 60, 143, 0.1);
+        transform: translateY(-1px);
+    }
+
+    .offline-banner {
+        display: none;
+        padding: 0.9rem 1rem;
+        border: 1px solid #f59e0b;
+        border-radius: 12px;
+        background: #fef3c7;
+        color: #92400e;
+        font-weight: 700;
+    }
+
+    .offline-banner.show { display: block; }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1rem;
+        scroll-margin-top: 5.5rem;
+    }
+
+    .stat-card,
+    .section-card {
+        border: 1px solid var(--admin-border);
+        border-radius: var(--admin-radius);
+        background: var(--admin-surface);
+        box-shadow: var(--admin-shadow);
+        backdrop-filter: blur(12px);
+    }
+
+    .stat-card {
+        min-height: 140px;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 0.5rem;
+        text-align: center;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border-bottom: 4px solid var(--admin-accent);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(26, 60, 143, 0.15);
+    }
+
+    .stat-label {
+        color: var(--admin-primary);
+        font-size: 0.9rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+        color: var(--admin-accent);
+        font-family: 'Nunito', sans-serif;
+        font-size: 2.75rem;
+        font-weight: 900;
+        line-height: 1;
+        text-shadow: 0 2px 8px rgba(0, 201, 177, 0.15);
+    }
+
+    .stat-note {
+        color: var(--admin-muted);
+        font-size: 0.82rem;
+        font-weight: 600;
+    }
+
+    .module-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 1.5rem;
+    }
+
+    .section-card {
+        padding: 1.5rem;
+        scroll-margin-top: 5.5rem;
+    }
+
+    .section-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.2rem;
+    }
+
+    .section-kicker {
+        color: #007b6b; /* Darker accent color for better visibility */
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 0.25rem;
+    }
+
+    .admin-section-title {
+        color: var(--admin-primary);
+        font-family: 'Nunito', sans-serif;
+        font-size: 1.35rem;
+        font-weight: 900;
+        margin: 0;
+    }
+
+    .section-desc {
+        color: var(--admin-muted);
+        font-size: 0.9rem;
+        margin-top: 0.25rem;
+        line-height: 1.55;
+    }
+
+    .table-wrap {
+        overflow-x: auto;
+        border: 1px solid #edf3fb;
+        border-radius: 12px;
+        background: #fff;
+    }
+
+    .dash-table {
+        width: 100%;
+        min-width: 760px;
+        border-collapse: collapse;
+    }
+
+    .dash-table th,
+    .dash-table td {
+        padding: 0.9rem 1rem;
+        border-bottom: 1px solid #edf3fb;
+        text-align: left;
+        vertical-align: middle;
+    }
+
+    .dash-table th {
+        background: #f8fbff;
+        color: var(--admin-muted);
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .dash-table td {
+        color: var(--admin-text);
+        font-size: 0.9rem;
+    }
+
+    .dash-table tr:last-child td { border-bottom: none; }
+
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.28rem 0.65rem;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    .status-active,
+    .status-confirmed,
+    .status-reviewed,
+    .status-resolved {
+        background: #dcfce7;
+        color: #166534;
+    }
+
+    .status-inactive,
+    .status-cancelled,
+    .status-pending {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .status-completed {
+        background: #dbeafe;
+        color: #1e40af;
+    }
+
+    .btn {
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        border: 1.5px solid var(--admin-border);
+        border-radius: 999px;
+        background: #fff;
+        color: var(--admin-primary);
+        cursor: pointer;
+        font-family: 'Poppins', sans-serif;
+        font-weight: 800;
+        padding: 0.6rem 1rem;
+        transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 8px 20px rgba(26, 60, 143, 0.12);
+    }
+
+    .btn.primary {
+        background: var(--admin-primary);
+        color: #fff;
+        border-color: var(--admin-primary);
+    }
+
+    .btn.primary:hover { background: var(--admin-primary-mid); }
+    .btn.danger-outline { color: #b91c1c; border-color: #fecaca; background: #fff5f5; }
+    .btn.small { min-height: 36px; padding: 0.4rem 0.8rem; font-size: 0.78rem; }
+
+    .table-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .empty-row {
+        color: var(--admin-muted);
+        text-align: center;
+        padding: 1.5rem;
+    }
+
+    .modal-panel {
+        display: none;
+        position: fixed;
+        z-index: 1200;
+        inset: 0;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        background: rgba(15, 23, 42, 0.48);
+    }
+
+    .modal-box {
+        width: 100%;
+        max-width: 520px;
+        max-height: 92vh;
+        overflow-y: auto;
+        padding: 1.5rem;
+        border: 1px solid var(--admin-border);
+        border-radius: var(--admin-radius);
+        background: #fff;
+        box-shadow: var(--admin-shadow);
+    }
+
+    .modal-title {
+        color: var(--admin-primary);
+        font-family: 'Nunito', sans-serif;
+        font-size: 1.35rem;
+        font-weight: 900;
+        margin: 0 0 0.25rem;
+    }
+
+    .modal-desc {
+        color: var(--admin-muted);
+        font-size: 0.9rem;
+        margin-bottom: 1.1rem;
+    }
+
+    .admin-form {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .form-grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.8rem;
+    }
+
+    .form-field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .form-field label {
+        color: var(--admin-primary);
+        font-size: 0.78rem;
+        font-weight: 800;
+    }
+
+    .form-field input,
+    .form-field select,
+    .form-field textarea {
+        min-height: 44px;
+        padding: 0.75rem 1rem;
+        border: 1.5px solid var(--admin-border);
+        border-radius: 10px;
+        background: #f8fbff;
+        color: var(--admin-text);
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .form-field textarea { resize: vertical; }
+
+    .form-field input:focus,
+    .form-field select:focus,
+    .form-field textarea:focus {
+        outline: none;
+        border-color: var(--admin-primary-mid);
+        background: #fff;
+        box-shadow: 0 0 0 3px rgba(0, 153, 230, 0.12);
+    }
+
+    .modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        padding-top: 0.5rem;
+    }
+
+    @media (max-width: 1024px) {
+        .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+        .admin-hero { padding: 1.5rem; }
+    }
+
+    @media (max-width: 768px) {
+        .admin-shell { padding: 5.5rem 1rem 3rem; }
+        .admin-hero { grid-template-columns: 1fr; gap: 1rem; }
+        .admin-status-panel { min-width: 0; }
+        .section-header { flex-direction: column; align-items: stretch; gap: 1rem; }
+        .btn.primary { width: 100%; }
+        
+        .hide-mobile { display: none !important; }
+        .show-mobile { display: block !important; }
+    }
+
+    @media (max-width: 480px) {
+        .stats-grid { grid-template-columns: 1fr; }
+        .admin-title { font-size: 1.75rem; }
+        .stat-card { padding: 1.25rem; min-height: 120px; }
+        .stat-value { font-size: 2.15rem; }
+    }
+
+    /* Admin Mobile Cards */
+    .admin-mobile-cards { display: none; flex-direction: column; gap: 1rem; }
+    @media (max-width: 768px) {
+        .admin-mobile-cards { display: flex; }
+    }
+    .admin-card {
+        background: #fff;
+        border: 1px solid var(--admin-border);
+        border-radius: 12px;
+        padding: 1rem;
+        box-shadow: 0 2px 8px rgba(26, 60, 143, 0.05);
+    }
+    .ac-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.75rem; }
+    .ac-body { display: flex; flex-direction: column; gap: 0.5rem; }
+    .ac-row { display: flex; flex-direction: column; gap: 0.15rem; }
+    .ac-label { font-size: 0.7rem; font-weight: 800; color: var(--admin-muted); text-transform: uppercase; }
+    .ac-val { font-size: 0.88rem; color: var(--admin-text); font-weight: 600; }
+    .ac-footer { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #f8fbff; display: flex; gap: 0.5rem; }
+
+    /* Report Split View */
+    .report-container {
+        display: flex;
+        gap: 20px;
+        margin-top: 20px;
+    }
+    .report-list {
+        width: 35%;
+        overflow-y: auto;
+        max-height: 600px;
+        border: 1px solid var(--admin-border);
+        border-radius: 12px;
+        background: #fff;
+    }
+    .report-list input {
+        width: 100%;
+        padding: 12px;
+        border: none;
+        border-bottom: 1px solid var(--admin-border);
+        outline: none;
+        font-family: 'Poppins', sans-serif;
+    }
+    .report-detail {
+        width: 65%;
+        background: #f8fbff;
+        padding: 20px;
+        border-radius: 12px;
+        border: 1px solid var(--admin-border);
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+    .report-item {
+        padding: 15px;
+        border-bottom: 1px solid #f8fbff;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .report-item:hover, .report-item.active {
+        background: #eef2ff;
+    }
+    .report-item-title {
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+    @media (max-width: 768px) {
+        .report-container {
+            flex-direction: column;
+        }
+        .report-list,
+        .report-detail {
+            width: 100%;
+        }
+    }
+</style>
+
+<section class="admin-shell">
+    <div class="admin-container">
+        <header class="admin-hero">
+            <div>
+                <p class="admin-eyebrow">Administrator Workspace</p>
+                <h1 class="admin-title">Admin Dashboard</h1>
+                <p class="admin-subtitle">Manage clinical operations, staff access, appointment oversight, and report review from one focused command center.</p>
+            </div>
+        </header>
+
+
+        <div class="offline-banner" id="adminOfflineBanner">
+            Admin data is read-only while offline. Reconnect to manage users, reports, and appointment records.
+        </div>
+
+        <section class="stats-grid" id="stats-overview">
+            <div class="stat-card">
+                <span class="stat-label">Total Users</span>
+                <span class="stat-value">{{ total_users }}</span>
+                <span class="stat-note">Active platform accounts</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Pets Registered</span>
+                <span class="stat-value">{{ total_pets }}</span>
+                <span class="stat-note">Unique patient records</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Today's Appointments</span>
+                <span class="stat-value">{{ today_appointments }}</span>
+                <span class="stat-note">Clinic schedule load</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Bookings This Month</span>
+                <span class="stat-value">{{ total_bookings_this_month }}</span>
+                <span class="stat-note">Monthly activity</span>
+            </div>
+        </section>
+
+        <div class="module-grid">
+            <section class="section-card" id="user-management">
+                <div class="section-header">
+                    <div>
+                        <p class="section-kicker">Access Control</p>
+                        <h2 class="admin-section-title">User Management</h2>
+                        <p class="section-desc">Create staff accounts, review administrators, and activate or deactivate internal users.</p>
+                    </div>
+                    <button class="btn primary" type="button" onclick="openAddModal()">Add Staff / Doctor</button>
+                </div>
+                <div class="table-wrap hide-mobile">
+                    <table class="dash-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="staffTableBody">
+                            <tr><td colspan="5" class="empty-row">Loading users...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="admin-mobile-cards show-mobile" id="staffCardsMobile">
+                    <!-- Cards via JS -->
+                </div>
+            </section>
+
+            <section class="section-card" id="system-monitoring">
+                <div class="section-header">
+                    <div>
+                        <p class="section-kicker">System Monitoring</p>
+                        <h2 class="admin-section-title">Appointment Oversight</h2>
+                        <p class="section-desc">Track clinic demand, appointment status, and staff handling across the system.</p>
+                    </div>
+                </div>
+                <div class="table-wrap hide-mobile">
+                    <table class="dash-table">
+                        <thead>
+                            <tr>
+                                <th>Date & Time</th>
+                                <th>Client / Pet</th>
+                                <th>Service</th>
+                                <th>Status</th>
+                                <th>Handled By</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminBookingsTableBody">
+                            <tr><td colspan="5" class="empty-row">Loading appointments...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="admin-mobile-cards show-mobile" id="adminBookingsCardsMobile">
+                    <!-- Cards via JS -->
+                </div>
+            </section>
+
+            <section class="section-card" id="clinical-reports">
+                <div class="section-header">
+                    <div>
+                        <p class="section-kicker">Clinical Reports</p>
+                        <h2 class="admin-section-title">Submitted Reports Review</h2>
+                        <p class="section-desc">Review staff reports, add administrator feedback, and update resolution status.</p>
+                    </div>
+                </div>
+
+                <div class="report-container">
+                    <div class="report-list">
+                        <input type="text" id="reportSearch" placeholder="Search report title...">
+                        <div id="inlineReportList">
+                            <div class="empty-row">Loading reports...</div>
+                        </div>
+                    </div>
+
+                    <div class="report-detail" id="reportDetailPanel">
+                        <h3 id="reportTitle" style="margin-top:0; color:var(--admin-primary);">Select a report</h3>
+                        <p id="reportContent" style="color:var(--admin-text); line-height:1.6;">Report content will appear here.</p>
+                        
+                        <div id="reviewBox" style="display:none; flex-direction:column; gap:10px; margin-top:20px;">
+                            <label style="font-weight:800; color:var(--admin-primary); font-size:0.85rem;">Report Content (Correction Authority)</label>
+                            <textarea id="adminEditContent" rows="6" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--admin-border); font-family:inherit; resize:vertical;"></textarea>
+
+                            <label style="font-weight:800; color:var(--admin-primary); font-size:0.85rem;">Administrator Feedback</label>
+                            <textarea id="adminComment" placeholder="Write admin feedback..." rows="4" style="width:100%; padding:10px; border-radius:8px; border:1px solid var(--admin-border); font-family:inherit; resize:vertical;"></textarea>
+                            
+                            <label style="font-weight:800; color:var(--admin-primary); font-size:0.85rem;">Review Status</label>
+                            <select id="reviewStatus" style="padding:10px; border-radius:8px; border:1px solid var(--admin-border); font-family:inherit;">
+                                <option value="pending">Pending</option>
+                                <option value="reviewed">Reviewed</option>
+                                <option value="needs_action">Needs Action</option>
+                                <option value="resolved">Resolved</option>
+                            </select>
+                            
+                            <div style="display:flex; gap:10px; margin-top:10px;">
+                                <button class="btn primary" id="btnSubmitReview" onclick="submitReview()">Save Changes</button>
+                                <button class="btn danger-outline" id="btnSoftDelete" onclick="deleteReport()">Delete Report</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-card" id="recent-activity">
+                <div class="section-header">
+                    <div>
+                        <p class="section-kicker">Audit Logs</p>
+                        <h2 class="admin-section-title">Operational Activity</h2>
+                        <p class="section-desc">Recent administrative dashboard activity from this session.</p>
+                    </div>
+                </div>
+                <div class="table-wrap">
+                    <table class="dash-table">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Event</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="auditLogBody">
+                            <tr><td colspan="3" class="empty-row">No activity recorded yet.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </div>
+</section>
+
+<div id="staffModal" class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-box">
+        <h2 id="modalTitle" class="modal-title">Add New Staff</h2>
+        <p id="modalDesc" class="modal-desc">Fill in the details below.</p>
+        <form id="staffForm" class="admin-form">
+            <input type="hidden" id="staffId">
+            <div class="form-grid-2">
+                <div class="form-field">
+                    <label for="firstName">First Name</label>
+                    <input type="text" id="firstName" required>
+                </div>
+                <div class="form-field">
+                    <label for="lastName">Last Name</label>
+                    <input type="text" id="lastName" required>
+                </div>
+            </div>
+            <div class="form-field">
+                <label for="staffEmail">Email Address</label>
+                <input type="email" id="staffEmail" required>
+            </div>
+            <div class="form-field">
+                <label for="staffContact">Contact Number</label>
+                <input type="text" id="staffContact">
+            </div>
+            <div class="form-field">
+                <label for="staffRole">Role</label>
+                <select id="staffRole">
+                    <option value="staff">Receptionist / Staff</option>
+                    <option value="admin">Administrator</option>
+                </select>
+            </div>
+            <div class="form-field">
+                <label for="staffPassword">Password <span id="pwHint">(min 6 chars)</span></label>
+                <input type="password" id="staffPassword">
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn" onclick="closeStaffModal()">Cancel</button>
+                <button type="submit" class="btn primary" id="submitBtn">Create Account</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Old Report Modal Removed -->
+
+<script>
+    const staffModal = document.getElementById('staffModal');
+    const staffForm = document.getElementById('staffForm');
+    const auditLogBody = document.getElementById('auditLogBody');
+    let allReports = [];
+
+    function appendAudit(event, status = 'OK') {
+        const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        if (auditLogBody.querySelector('.empty-row')) auditLogBody.innerHTML = '';
+        auditLogBody.insertAdjacentHTML('afterbegin', `
+            <tr>
+                <td>${now}</td>
+                <td>${event}</td>
+                <td><span class="status-pill ${status === 'OK' ? 'status-active' : 'status-pending'}">${status}</span></td>
+            </tr>
+        `);
+    }
+
+    function updateConnectionState() {
+        const banner = document.getElementById('adminOfflineBanner');
+        const online = navigator.onLine;
+        if (banner) banner.classList.toggle('show', !online);
+    }
+
+    window.addEventListener('online', updateConnectionState);
+    window.addEventListener('offline', updateConnectionState);
+    updateConnectionState();
+
+    function openAddModal() {
+        document.getElementById('modalTitle').innerText = 'Add Staff / Doctor';
+        document.getElementById('modalDesc').innerText = 'Create a staff or administrator account for clinic operations.';
+        document.getElementById('submitBtn').innerText = 'Create Account';
+        document.getElementById('staffId').value = '';
+        document.getElementById('staffPassword').required = true;
+        document.getElementById('pwHint').innerText = '(min 6 chars)';
+        staffForm.reset();
+        staffModal.style.display = 'flex';
+    }
+
+    function closeStaffModal() {
+        staffModal.style.display = 'none';
+    }
+
+    async function openEditModal(userId) {
+        document.getElementById('modalTitle').innerText = 'Edit Staff / Doctor';
+        document.getElementById('modalDesc').innerText = 'Update the staff details below.';
+        document.getElementById('submitBtn').innerText = 'Save Changes';
+        document.getElementById('staffId').value = userId;
+        document.getElementById('staffPassword').required = false;
+        document.getElementById('pwHint').innerText = '(leave blank to keep current)';
+
+        try {
+            const res = await fetch(`/api/v1/users/${userId}`, { headers: getAuthHeaders() });
+            const user = await res.json();
+            if (res.ok) {
+                document.getElementById('firstName').value = user.first_name;
+                document.getElementById('lastName').value = user.last_name;
+                document.getElementById('staffEmail').value = user.email;
+                document.getElementById('staffContact').value = user.contact || '';
+                document.getElementById('staffRole').value = user.role === 'vet' ? 'staff' : user.role;
+                staffModal.style.display = 'flex';
+            }
+        } catch (e) {
+            appendAudit('Unable to load staff profile', 'Issue');
+        }
+    }
+
+    staffForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const userId = document.getElementById('staffId').value;
+        const method = userId ? 'PUT' : 'POST';
+        const url = userId ? `/api/v1/users/${userId}` : '/api/v1/users';
+        const data = {
+            first_name: document.getElementById('firstName').value,
+            last_name: document.getElementById('lastName').value,
+            email: document.getElementById('staffEmail').value,
+            contact: document.getElementById('staffContact').value,
+            role: document.getElementById('staffRole').value
+        };
+        const password = document.getElementById('staffPassword').value;
+        if (password) data.password = password;
+
+        try {
+            const res = await fetch(url, { method, headers, body: JSON.stringify(data) });
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || err.message || 'Operation failed');
+            }
+            closeStaffModal();
+            appendAudit(userId ? 'Updated staff account' : 'Created staff account');
+            await loadStaff();
+        } catch (error) {
+            appendAudit(error.message, 'Issue');
+            alert(error.message);
+        }
+    });
+
+    function getAuthHeaders() {
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+            window.location.href = '/login?msg=Session+Expired';
+            return null;
+        }
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        return { 
+            'Content-Type': 'application/json', 
+            'Authorization': `Bearer ${token}`,
+            'X-CSRF-Token': csrfToken
+        };
+    }
+
+    async function loadStaff() {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const body = document.getElementById('staffTableBody');
+        const cards = document.getElementById('staffCardsMobile');
+        try {
+            const res = await fetch('/api/v1/users', { headers });
+            if (!res.ok) throw new Error('Unable to load users');
+            const users = await res.json();
+            const internalUsers = users.filter((u) => ['admin', 'staff', 'vet'].includes(u.role));
+            
+            body.innerHTML = internalUsers.length ? '' : '<tr><td colspan="5" class="empty-row">No staff accounts found.</td></tr>';
+            cards.innerHTML = '';
+
+            internalUsers.forEach((u) => {
+                const roleLabel = u.role === 'vet' ? 'staff' : u.role;
+                const statusClass = u.is_active ? 'status-active' : 'status-inactive';
+                const statusLabel = u.is_active ? 'Active' : 'Inactive';
+
+                // Table
+                body.insertAdjacentHTML('beforeend', `
+                    <tr>
+                        <td><strong>${escapeHTML(u.first_name)} ${escapeHTML(u.last_name)}</strong></td>
+                        <td>${escapeHTML(u.email)}</td>
+                        <td><span style="text-transform:capitalize;">${escapeHTML(roleLabel)}</span></td>
+                        <td><span class="status-pill ${statusClass}">${statusLabel}</span></td>
+                        <td>
+                            <div class="table-actions">
+                                <button class="btn small" onclick="openEditModal(${u.id})">Edit</button>
+                                <button class="btn small ${u.is_active ? 'danger-outline' : ''}" onclick="toggleStatus(${u.id}, ${u.is_active})">${u.is_active ? 'Deactivate' : 'Activate'}</button>
+                            </div>
+                        </td>
+                    </tr>
+                `);
+
+                // Cards
+                cards.insertAdjacentHTML('beforeend', `
+                    <div class="admin-card">
+                         <div class="ac-header">
+                             <span class="ac-val"><strong>${escapeHTML(u.first_name)} ${escapeHTML(u.last_name)}</strong></span>
+                             <span class="status-pill ${statusClass}">${statusLabel}</span>
+                         </div>
+                         <div class="ac-body">
+                             <div class="ac-row"><span class="ac-label">Email:</span><span class="ac-val">${escapeHTML(u.email)}</span></div>
+                             <div class="ac-row"><span class="ac-label">Role:</span><span class="ac-val" style="text-transform:capitalize;">${escapeHTML(roleLabel)}</span></div>
+                         </div>
+                        <div class="ac-footer">
+                            <button class="btn small primary" onclick="openEditModal(${u.id})" style="flex:1;">Edit</button>
+                            <button class="btn small ${u.is_active ? 'danger-outline' : ''}" onclick="toggleStatus(${u.id}, ${u.is_active})" style="flex:1;">${u.is_active ? 'Deactivate' : 'Activate'}</button>
+                        </div>
+                    </div>
+                `);
+            });
+            appendAudit('Loaded user management');
+        } catch (error) {
+            body.innerHTML = '<tr><td colspan="5" class="empty-row">Users unavailable while offline or unauthenticated.</td></tr>';
+            cards.innerHTML = '<div class="empty-row">Users unavailable.</div>';
+            appendAudit('User management unavailable', 'Issue');
+        }
+    }
+
+    async function toggleStatus(userId, currentStatus) {
+        if (!confirm(`Are you sure you want to ${currentStatus ? 'deactivate' : 'activate'} this account?`)) return;
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        try {
+            const res = await fetch(`/api/v1/users/${userId}`, {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify({ is_active: !currentStatus })
+            });
+            if (!res.ok) throw new Error('Status update failed');
+            appendAudit('Updated user status');
+            await loadStaff();
+        } catch (error) {
+            appendAudit(error.message, 'Issue');
+        }
+    }
+
+    async function loadAppointments() {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const body = document.getElementById('adminBookingsTableBody');
+        const cards = document.getElementById('adminBookingsCardsMobile');
+        try {
+            const res = await fetch('/api/v1/appointments/all', { headers });
+            if (!res.ok) throw new Error('Unable to load appointments');
+            const bookings = await res.json();
+            
+            body.innerHTML = bookings.length ? '' : '<tr><td colspan="5" class="empty-row">No appointments found.</td></tr>';
+            cards.innerHTML = '';
+
+            bookings.forEach((b) => {
+                const statusStr = b.status || 'pending';
+                const statusClass = `status-${statusStr.toLowerCase()}`;
+                const dateStr = new Date(b.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+                // Table
+                body.insertAdjacentHTML('beforeend', `
+                    <tr>
+                        <td>
+                            <strong>${escapeHTML(dateStr)}</strong>
+                            <br><small>${escapeHTML(b.slot)}</small>
+                        </td>
+                        <td>
+                            <strong>${escapeHTML(b.pet_name || 'N/A')}</strong>
+                            <br><small>${escapeHTML(b.name || 'Unknown client')}</small>
+                        </td>
+                        <td>${escapeHTML(b.service_name || 'Unknown service')}</td>
+                        <td><span class="status-pill ${statusClass}">${escapeHTML(statusStr.toUpperCase())}</span></td>
+                        <td>${escapeHTML(b.handled_by || 'System / Not Recorded')}</td>
+                    </tr>
+                `);
+
+                // Cards
+                cards.insertAdjacentHTML('beforeend', `
+                    <div class="admin-card">
+                        <div class="ac-header">
+                            <span class="ac-val"><strong>${dateStr}</strong></span>
+                            <span class="status-pill ${statusClass}">${statusStr.toUpperCase()}</span>
+                        </div>
+                        <div class="ac-body">
+                            <div class="ac-row"><span class="ac-label">Pet/Client:</span><span class="ac-val">${b.pet_name || 'N/A'} (${b.name || 'Unknown'})</span></div>
+                            <div class="ac-row"><span class="ac-label">Time:</span><span class="ac-val">${b.slot}</span></div>
+                            <div class="ac-row"><span class="ac-label">Service:</span><span class="ac-val">${b.service_name || 'Unknown'}</span></div>
+                        </div>
+                    </div>
+                `);
+            });
+            appendAudit('Loaded appointment monitoring');
+        } catch (error) {
+            body.innerHTML = '<tr><td colspan="5" class="empty-row">Appointments unavailable while offline or unauthenticated.</td></tr>';
+            cards.innerHTML = '<div class="empty-row">Appointments unavailable.</div>';
+            appendAudit('Appointment monitoring unavailable', 'Issue');
+        }
+    }
+
+    let currentReportId = null;
+
+    async function loadReports() {
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const inlineList = document.getElementById('inlineReportList');
+        try {
+            const res = await fetch('/api/v1/reports', { headers });
+            if (!res.ok) throw new Error('Unable to load reports');
+            const reports = await res.json();
+            allReports = reports;
+            
+            inlineList.innerHTML = reports.length ? '' : '<div class="empty-row">No reports submitted.</div>';
+
+            reports.forEach((r) => {
+                const statusStr = r.is_deleted ? 'DELETED' : String(r.status || 'Pending').toUpperCase();
+                const statusClass = r.is_deleted ? 'status-needs_action' : `status-${String(r.status || 'Pending').toLowerCase()}`;
+
+                inlineList.insertAdjacentHTML('beforeend', `
+                    <div class="report-item" onclick="loadReport(${r.id})">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:5px;">
+                            <span class="report-item-title" style="${r.is_deleted ? 'text-decoration: line-through; color: #94A3B8;' : ''}">${r.title}</span>
+                            <span class="status-pill ${statusClass}">${statusStr}</span>
+                        </div>
+                        <div style="font-size:0.75rem; color:var(--admin-muted);">
+                            By ${r.staff_name} • ${r.created_at}
+                        </div>
+                    </div>
+                `);
+            });
+            appendAudit('Loaded clinical reports');
+        } catch (error) {
+            inlineList.innerHTML = '<div class="empty-row">Reports unavailable.</div>';
+            appendAudit('Clinical reports unavailable', 'Issue');
+        }
+    }
+
+    function loadReport(id) {
+        const report = allReports.find((item) => item.id === id);
+        if (!report) return;
+        
+        currentReportId = id;
+        
+        // Highlight active item
+        document.querySelectorAll('.report-item').forEach(el => el.classList.remove('active'));
+        if (event && event.currentTarget) {
+            event.currentTarget.classList.add('active');
+        }
+
+        const statusStr = report.is_deleted ? 'DELETED' : String(report.status || 'Pending').toUpperCase();
+        const statusClass = report.is_deleted ? 'status-needs_action' : `status-${String(report.status || 'Pending').toLowerCase()}`;
+
+        document.getElementById('reportTitle').innerHTML = `<span style="${report.is_deleted ? 'text-decoration: line-through; color: #94A3B8;' : ''}">${report.title}</span> <span class="status-pill ${statusClass}" style="margin-left:10px; font-size:0.75rem;">${statusStr}</span>`;
+        
+        const reviewText = report.reviewed_by ? `<br><strong>Last Reviewed:</strong> ${report.reviewed_at}` : '';
+        
+        let historyHtml = '';
+        if (report.edit_history && report.edit_history.length > 0) {
+            historyHtml = `<div style="margin-top:15px; border-top:1px solid var(--admin-border); padding-top:10px;">
+                <strong style="color:var(--admin-muted); font-size:0.8rem; text-transform:uppercase;">Edit History (${report.edit_history.length})</strong>
+                <ul style="padding-left:20px; font-size:0.85rem; color:var(--admin-muted); margin-top:5px;">`;
+            report.edit_history.forEach(entry => {
+                const editor = entry.edited_by ? 'Admin' : 'Staff';
+                historyHtml += `<li>Edited by ${editor} on ${new Date(entry.edited_at).toLocaleString()}</li>`;
+            });
+            historyHtml += `</ul></div>`;
+        }
+
+        document.getElementById('reportContent').innerHTML = `
+            <strong>Category:</strong> ${report.category}<br>
+            <strong>Submitted By:</strong> ${report.staff_name} (${report.created_at})<br>
+            ${reviewText}
+            ${historyHtml}
+        `;
+
+        document.getElementById('adminEditContent').value = report.description || '';
+        document.getElementById('adminComment').value = report.admin_comment || '';
+        document.getElementById('reviewStatus').value = (report.admin_review_status || report.status || 'pending').toLowerCase();
+        
+        if (report.is_deleted) {
+            document.getElementById('btnSoftDelete').style.display = 'none';
+        } else {
+            document.getElementById('btnSoftDelete').style.display = 'inline-block';
+        }
+        
+        document.getElementById('reviewBox').style.display = 'flex';
+    }
+
+    async function submitReview() {
+        if (!currentReportId) return;
+        
+        const btn = document.getElementById('btnSubmitReview');
+        if (btn.disabled) return; // Prevent double trigger
+        
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        const payload = {
+            status: document.getElementById('reviewStatus').value,
+            admin_comment: document.getElementById('adminComment').value,
+            description: document.getElementById('adminEditContent').value
+        };
+
+        try {
+            btn.disabled = true;
+            btn.innerText = 'Saving...';
+            
+            // we use the main update endpoint for full capability
+            const res = await fetch(`/api/v1/reports/${currentReportId}`, {
+                method: 'PUT',
+                headers,
+                body: JSON.stringify(payload)
+            });
+            
+            if (!res.ok) throw new Error('Update failed');
+            
+            appendAudit('Updated clinical report content/status');
+            await loadReports();
+            loadReport(currentReportId);
+        } catch (error) {
+            appendAudit(error.message, 'Issue');
+            alert('Failed to save. Please try again.');
+        } finally {
+            btn.disabled = false;
+            btn.innerText = 'Save Changes';
+        }
+    }
+
+    async function deleteReport() {
+        if (!currentReportId) return;
+        if (!confirm("Are you sure you want to delete this report? This will be recorded in the audit log.")) return;
+        
+        const headers = getAuthHeaders();
+        if (!headers) return;
+
+        try {
+            const res = await fetch(`/api/v1/reports/${currentReportId}`, {
+                method: 'DELETE',
+                headers
+            });
+            
+            if (!res.ok) throw new Error('Deletion failed');
+            
+            appendAudit('Soft deleted clinical report');
+            await loadReports();
+            loadReport(currentReportId);
+        } catch (error) {
+            appendAudit(error.message, 'Issue');
+            alert('Failed to delete. Please try again.');
+        }
+    }
+
+
+    // Search filter for reports list
+    const reportSearch = document.getElementById('reportSearch');
+    if(reportSearch) {
+        reportSearch.addEventListener('input', function(e) {
+            const term = e.target.value.toLowerCase();
+            document.querySelectorAll('#inlineReportList .report-item').forEach(item => {
+                const text = item.innerText.toLowerCase();
+                item.style.display = text.includes(term) ? 'block' : 'none';
+            });
+        });
+    }
+
+
+    window.addEventListener('load', async () => {
+        await Promise.allSettled([loadStaff(), loadAppointments(), loadReports()]);
+    });
+</script>
+
+{% endblock %}

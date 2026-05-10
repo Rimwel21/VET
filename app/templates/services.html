@@ -1,0 +1,24 @@
+{% extends "base_public.html" %}
+{% block title %}Services - VetSync{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+    <h1>Our <span>Services</span></h1>
+    <p>Comprehensive care for every pet, every need.</p>
+</section>
+
+<section class="services-full">
+    <div class="services-full-container">
+        {% for svc in services %}
+        <div class="service-full-card {% if loop.index is even %}reverse{% endif %}">
+            <div class="svc-icon-big">{{ svc.icon }}</div>
+            <div class="svc-info">
+                <h2>{{ svc.name }}</h2>
+                <p>{{ svc.desc }}</p>
+                <a href="{{ url_for('booking.booking_page') }}" class="btn-primary">Book This Service</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

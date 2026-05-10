@@ -1,0 +1,356 @@
+{% extends "base_staff.html" %}
+{% block title %}Manage Schedule - VetSync{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --dash-primary: #0EA5E9;
+        --dash-primary-hover: #0284C7;
+        --dash-bg: #F0F9FF;
+        --dash-card-bg: #FFFFFF;
+        --dash-border: #E2E8F0;
+        --dash-text: #1E293B;
+        --dash-text-muted: #64748B;
+    }
+
+    body { background-color: var(--dash-bg); }
+
+    .control-container {
+        max-width: 1400px;
+        margin: 100px auto 40px;
+        padding: 0 20px;
+    }
+
+    .control-panel {
+        display: grid;
+        grid-template-columns: 1fr 2fr;
+        gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+        .control-panel {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .panel-card {
+        background: white;
+        border: 1px solid #E2E8F0;
+        border-radius: 24px;
+        padding: 30px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 20px;
+    }
+
+    .activity-feed {
+        max-height: 600px;
+        overflow-y: auto;
+        padding-right: 10px;
+    }
+
+    .card-header {
+        margin-bottom: 20px;
+        border-bottom: 1px solid #F1F5F9;
+        padding-bottom: 15px;
+    }
+
+    .log-item {
+        padding: 15px;
+        border-bottom: 1px solid #F1F5F9;
+        display: flex;
+        gap: 15px;
+        align-items: flex-start;
+        font-size: 14px;
+    }
+    .log-item:hover { background: #F8FAFC; }
+
+    .log-icon {
+        width: 36px; height: 36px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .badge {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 10px;
+        text-transform: uppercase;
+    }
+
+    .hub-link {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 15px;
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 12px;
+        color: #1E293B;
+        text-decoration: none;
+        font-weight: 700;
+        margin-bottom: 10px;
+        transition: all 0.2s;
+    }
+    .hub-link:hover {
+        background: #F0F9FF;
+        border-color: #BAE6FD;
+        color: #0369A1;
+    }
+
+    .audit-link {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        color: #64748B;
+        text-decoration: none;
+        font-size: 14px;
+        border-radius: 8px;
+        transition: background 0.2s;
+    }
+    .audit-link:hover {
+        background: #F1F5F9;
+        color: #1E293B;
+    }
+
+    /* MODAL STYLES */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(4px);
+        z-index: 1000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+    }
+    .modal-overlay.active { display: flex; opacity: 1; }
+    .modal-box {
+        background: white;
+        border-radius: 24px;
+        width: 100%;
+        max-width: 600px;
+        padding: 40px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    }
+    .cal-btn {
+        background: var(--dash-primary);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 12px 20px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .cal-btn:hover { background: var(--dash-primary-hover); }
+</style>
+
+<div class="control-container">
+    <div style="margin-bottom: 40px;">
+        <h1 style="font-size: 32px; font-weight: 900; color: #1E293B;">Control Panel</h1>
+        <p style="color: #64748B; font-size: 16px;">System-level oversight, real-time activity monitoring, and historical transparency.</p>
+    </div>
+
+    <div class="control-panel">
+        
+        <!-- LEFT COLUMN: Hub & Nav -->
+        <div>
+            <div class="panel-card" style="padding:25px;" id="manage-schedule">
+                <div class="card-header">
+                    <h2 style="margin:0; font-size:20px; color:#1E293B;">Manage Schedule</h2>
+                </div>
+                <p style="color:#64748B; font-size:14px; line-height:1.6; margin:0 0 18px 0;">
+                    Block or reopen appointment slots for the selected day. This panel is for schedule control only.
+                </p>
+                <button type="button" onclick="openAvailabilityModal()" class="hub-link" style="width:100%;">
+                    <span>Open Schedule Manager</span>
+                    <span style="color:#0EA5E9;">→</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Activity Feed -->
+        <div>
+            <div class="panel-card">
+                <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                    <h2 style="margin:0; font-size:22px; color:#1E293B;">Operational Activity Feed</h2>
+                    <span class="badge" style="background:#DCFCE7; color:#166534;">Live</span>
+                </div>
+                
+                <div class="activity-feed">
+                    <!-- Mock Real-time Activity -->
+                    <div class="log-item">
+                        <div class="log-icon" style="background:#E0F2FE; color:#0369A1;">📅</div>
+                        <div style="flex:1;">
+                            <div style="font-weight:700; color:#1E293B;">Appointment Update</div>
+                            <div style="color:#475569; margin-top:4px;">Staff <strong>Dr. Smith</strong> updated status for <strong>Buddy (Dog)</strong> to <span class="badge" style="background:#DCFCE7; color:#166534;">Confirmed</span></div>
+                            <div style="font-size:12px; color:#94A3B8; margin-top:6px;">Just now</div>
+                        </div>
+                    </div>
+                    <div class="log-item">
+                        <div class="log-icon" style="background:#F1F5F9; color:#475569;">📄</div>
+                        <div style="flex:1;">
+                            <div style="font-weight:700; color:#1E293B;">New Report Submitted</div>
+                            <div style="color:#475569; margin-top:4px;"><strong>Staff User</strong> submitted a <em>Daily Summary</em> report.</div>
+                            <div style="font-size:12px; color:#94A3B8; margin-top:6px;">12 minutes ago</div>
+                        </div>
+                    </div>
+                    <div class="log-item">
+                        <div class="log-icon" style="background:#FEF9C3; color:#854D0E;">🔓</div>
+                        <div style="flex:1;">
+                            <div style="font-weight:700; color:#1E293B;">Schedule Change</div>
+                            <div style="color:#475569; margin-top:4px;">Blocked slot <strong>10:00 AM</strong> for <strong>2026-05-02</strong>.</div>
+                            <div style="font-size:12px; color:#94A3B8; margin-top:6px;">45 minutes ago</div>
+                        </div>
+                    </div>
+                    <div class="log-item">
+                        <div class="log-icon" style="background:#FEE2E2; color:#B91C1C;">🔒</div>
+                        <div style="flex:1;">
+                            <div style="font-weight:700; color:#1E293B;">Patient Record Viewed</div>
+                            <div style="color:#475569; margin-top:4px;">Staff opened the history panel for <strong>Buddy (Dog)</strong> and reviewed recent visit notes.</div>
+                            <div style="font-size:12px; color:#94A3B8; margin-top:6px;">2 hours ago</div>
+                        </div>
+                    </div>
+                    <div class="log-item">
+                        <div class="log-icon" style="background:#DCFCE7; color:#166534;">✅</div>
+                        <div style="flex:1;">
+                            <div style="font-weight:700; color:#1E293B;">Appointment Completed</div>
+                            <div style="color:#475569; margin-top:4px;">A confirmed visit was closed out and marked completed after treatment.</div>
+                            <div style="font-size:12px; color:#94A3B8; margin-top:6px;">4 hours ago</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- Modal: Manage Availability -->
+<div class="modal-overlay" id="availabilityModal">
+    <div class="modal-box">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #F1F5F9; padding-bottom: 20px; margin-bottom: 20px;">
+            <h2 style="margin:0;">Manage Availability</h2>
+            <button onclick="document.getElementById('availabilityModal').classList.remove('active')" style="background:none; border:none; font-size:24px; cursor:pointer;">&times;</button>
+        </div>
+        <div>
+            <label style="font-weight:600; display:block; margin-bottom:8px;">Select Date</label>
+            <input type="date" id="availDate" style="padding:12px; width:100%; border:1px solid #E2E8F0; border-radius:10px; margin-bottom:20px;" onchange="loadBlockedForDate()">
+            <div id="availSlotsGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(120px, 1fr)); gap:10px;">
+                <!-- Slots -->
+            </div>
+        </div>
+        <div style="margin-top:30px; text-align:right;">
+            <button class="cal-btn" onclick="document.getElementById('availabilityModal').classList.remove('active')">Done</button>
+        </div>
+    </div>
+</div>
+
+
+<script id="bookings-data" type="application/json">
+    {{ bookings_json | safe }}
+</script>
+<script>
+    const rawBookings = JSON.parse(document.getElementById('bookings-data').textContent || '[]');
+    const timeSlots = ["9:00 AM", "10:00 AM", "11:00 AM", "1:00 PM", "2:00 PM", "3:00 PM", "4:00 PM"];
+    let blockedSlotsCache = [];
+
+    function getAuthHeaders() { 
+        return { 
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]')?.content
+        }; 
+    }
+
+    function formatDate(d) {
+        return d.toISOString().split('T')[0];
+    }
+
+    async function loadBlocked() {
+        try {
+            const res = await fetch('/api/v1/schedule', { headers: getAuthHeaders() });
+            if (res.ok) blockedSlotsCache = await res.json();
+        } catch (e) {}
+    }
+
+    function openAvailabilityModal() {
+        document.getElementById('availDate').value = formatDate(new Date());
+        loadBlockedForDate();
+        document.getElementById('availabilityModal').classList.add('active');
+    }
+
+    function loadBlockedForDate() {
+        const date = document.getElementById('availDate').value;
+        const grid = document.getElementById('availSlotsGrid');
+        grid.innerHTML = '';
+        
+        timeSlots.forEach(slot => {
+            const isBlocked = blockedSlotsCache.some(b => b.date === date && b.slot === slot);
+            const isBooked = rawBookings.some(b => b.date === date && b.slot === slot);
+            
+            let style = "background:#DCFCE7; color:#166534; border:1px solid #BBF7D0;";
+            let status = "✓ Available";
+            let action = `onclick="toggleSlot('${date}', '${slot}', false)"`;
+
+            if (isBooked) {
+                style = "background:#FEE2E2; color:#991B1B; border:1px solid #FECACA; opacity:0.6; cursor:not-allowed;";
+                status = "🔒 Booked";
+                action = "";
+            } else if (isBlocked) {
+                style = "background:#F1F5F9; color:#475569; border:1px solid #CBD5E1;";
+                status = "✕ Closed";
+                action = `onclick="toggleSlot('${date}', '${slot}', true)"`;
+            }
+            
+            grid.innerHTML += `<div class="slot-item" style="padding:10px; text-align:center; border-radius:10px; cursor:pointer; ${style}" ${action}>
+                <div style="font-weight:700;">${slot}</div>
+                <div style="font-size:10px;">${status}</div>
+            </div>`;
+        });
+    }
+
+    async function toggleSlot(date, slot, isBlocked) {
+        const url = isBlocked ? '/api/v1/schedule/unblock' : '/api/v1/schedule/block';
+        const method = isBlocked ? 'DELETE' : 'POST';
+        try {
+            const res = await fetch(url, { method, headers: getAuthHeaders(), body: JSON.stringify({ date, slot }) });
+            if (res.ok) {
+                if (isBlocked) blockedSlotsCache = blockedSlotsCache.filter(b => !(b.date === date && b.slot === slot));
+                else blockedSlotsCache.push({ date, slot });
+                loadBlockedForDate();
+            }
+        } catch (e) {}
+    }
+
+    document.getElementById('reportForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        try {
+            const res = await fetch('/api/v1/reports', {
+                method: 'POST',
+                headers: getAuthHeaders(),
+                body: JSON.stringify({
+                    title: document.getElementById('repTitle').value,
+                    category: document.getElementById('repCat').value,
+                    description: document.getElementById('repDesc').value
+                })
+            });
+            if (res.ok) {
+                alert("Report submitted.");
+                document.getElementById('reportModal').classList.remove('active');
+            }
+        } catch (e) {}
+    });
+
+    document.addEventListener('DOMContentLoaded', loadBlocked);
+</script>
+{% endblock %}

@@ -1,0 +1,144 @@
+{% extends "base_public.html" %}
+{% block title %}Sign Up - VetSync{% endblock %}
+
+{% block content %}
+<section class="auth-section">
+    <div class="auth-bg">
+        <div class="auth-overlay">
+            <h1 class="auth-welcome">Welcome to<br><span>VetSync Clinic</span></h1>
+            <p>VetSync makes joining simple and secure. Create your account to book appointments anytime, manage your pet’s records, and unlock exclusive offers all designed to make pet care effortless.</p>
+        </div>
+    </div>
+    <div class="auth-card signup-card">
+        <h2 class="auth-title">Sign Up</h2>
+        <form class="auth-form" action="{{ url_for('auth.signup') }}" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="auth-row">
+                <div class="auth-field">
+                    <input type="text" name="first_name" id="first_name" placeholder="Enter your First Name" required>
+                    <span class="field-icon">👤</span>
+                </div>
+                <div class="auth-field">
+                    <input type="text" name="last_name" id="last_name" placeholder="Enter your Last Name" required>
+                    <span class="field-icon">👤</span>
+                </div>
+            </div>
+            <div class="auth-row">
+                <div class="auth-field">
+                    <input type="email" name="email" placeholder="Enter your Email" required>
+                    <span class="field-icon">✉️</span>
+                </div>
+                <div class="auth-field">
+                    <input type="tel" name="contact" placeholder="Contact No." required oninput="this.value = this.value.replace(/[^0-9]/g, '')">
+                    <span class="field-icon">📞</span>
+                </div>
+            </div>
+            <div class="auth-row">
+                <div class="auth-field" style="position: relative;">
+                    <input type="password" id="signupPass" name="password" minlength="8" placeholder="Enter your Password" required>
+                    <span onclick="togglePassword('signupPass', this)" title="Show Password" style="position:absolute; right: 15px; top:50%; transform:translateY(-50%); cursor:pointer; font-size: 18px; color: #64748B; user-select: none;">👁️</span>
+                </div>
+                <div class="auth-field" style="position: relative;">
+                    <input type="password" id="signupPass2" name="re_password" minlength="8" placeholder="Re-enter Password" required>
+                    <span onclick="togglePassword('signupPass2', this)" title="Show Password" style="position:absolute; right: 15px; top:50%; transform:translateY(-50%); cursor:pointer; font-size: 18px; color: #64748B; user-select: none;">👁️</span>
+                </div>
+            </div>
+            <button type="submit" class="btn-auth">Sign up</button>
+            <p class="auth-switch">Already have an account? <a href="{{ url_for('auth.login') }}">Log in</a></p>
+        </form>
+    </div>
+</section>
+
+<!-- OTP Components -->
+{% include 'components/otp_modal.html' %}
+<script src="{{ url_for('static', filename='js/otp_handler.js', v='1.1') }}"></script>
+
+<script>
+    const signupForm = document.querySelector('.auth-form');
+    const signupBtn = signupForm.querySelector('.btn-auth');
+    
+    signupForm.addEventListener('submit', async (e) => {
+        // Only intercept if not already verified
+        if (signupForm.dataset.verified === 'true') return;
+        
+        e.preventDefault();
+        const email = signupForm.querySelector('input[name="email"]').value;
+        const pass = document.getElementById('signupPass').value;
+        const pass2 = document.getElementById('signupPass2').value;
+        
+        if (pass !== pass2) {
+            alert("Passwords do not match!");
+            return;
+        }
+        
+        signupBtn.disabled = true;
+        signupBtn.innerText = "Sending OTP...";
+        
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+            if (!csrfToken) {
+                console.error("CSRF token meta tag missing");
+            }
+
+            const response = await fetch('/api/v1/auth/send-otp', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': csrfToken
+                },
+                body: JSON.stringify({ email: email })
+            });
+            
+            let data;
+            const contentType = response.headers.get("content-type");
+            if (contentType && contentType.includes("application/json")) {
+                data = await response.json();
+            }
+
+            if (response.ok) {
+                openOtpModal(email);
+                if (data && data.dev_otp) {
+                    alert(`Local testing OTP: ${data.dev_otp}`);
+                }
+            } else {
+                const errorMsg = (data && data.message) || (response.status === 403 ? "Security session expired. Please refresh the page." : "Failed to send OTP. Please try again.");
+                alert(errorMsg);
+                signupBtn.disabled = false;
+                signupBtn.innerText = "Sign up";
+            }
+        } catch (error) {
+            console.error("Signup Fetch Error:", error);
+            alert("Connection error. Please check your internet or refresh the page.");
+            signupBtn.disabled = false;
+            signupBtn.innerText = "Sign up";
+        }
+    });
+
+    // Success callback for OTP
+    window.onOtpVerified = function() {
+        signupForm.dataset.verified = 'true';
+        signupBtn.disabled = false;
+        signupBtn.innerText = "Creating Account...";
+        signupForm.submit();
+    };
+
+    document.getElementById("first_name").addEventListener("input", function () {
+    this.value = this.value.replace(/[^a-zA-Z\s]/g, "");
+    });
+    document.getElementById("last_name").addEventListener("input", function () {
+    this.value = this.value.replace(/[^a-zA-Z\s]/g, "");
+    });
+function togglePassword(inputId, iconEl) {
+    const input = document.getElementById(inputId);
+    if (input.type === "password") {
+        input.type = "text";
+        iconEl.innerText = "🙈"; 
+        iconEl.title = "Hide Password";
+    } else {
+        input.type = "password";
+        iconEl.innerText = "👁️"; 
+        iconEl.title = "Show Password";
+    }
+}
+</script>
+{% endblock %}

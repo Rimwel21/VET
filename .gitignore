@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env
+.env.local
+.env.*.local
+
+# Flask / SQLite
+instance/
+*.db
+!dataset/raw/*.csv
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Large Files / Models
+*.pkl
+ml/model/
