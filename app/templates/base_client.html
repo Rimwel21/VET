@@ -27,12 +27,12 @@
           <li><a href="{{ url_for('main.about') }}" class="{% if request.endpoint == 'main.about' %}active{% endif %}">About</a></li>
           <li><a href="{{ url_for('main.services_page') }}" class="{% if request.endpoint == 'main.services_page' %}active{% endif %}">Services</a></li>
           <li><a href="{{ url_for('main.contact') }}" class="{% if request.endpoint == 'main.contact' %}active{% endif %}">Contacts</a></li>
-          <li><a href="{{ url_for('dashboard.client_dashboard') }}" class="nav-dashboard-link active">📊 Dashboard</a></li>
+          <!-- <li><a href="{{ url_for('dashboard.client_dashboard') }}" class="nav-dashboard-link active">📊 Dashboard</a></li> -->
         </ul>
         <div class="nav-auth">
           <div class="nav-user-area">
-            <span class="nav-user-name">👋 {{ current_user.first_name }}</span>
-            <a href="{{ url_for('auth.logout') }}" class="btn-nav-logout">🚪 Logout</a>
+            <a href="{{url_for('dashboard.dashboard')}}" class="nav-user-name"> {{current_user.first_name}}</a>
+            <a href="{{ url_for('auth.logout') }}" class="btn-nav-logout">Logout</a>
           </div>
         </div>
         <button class="hamburger" type="button" onclick="toggleMenu()">☰</button>

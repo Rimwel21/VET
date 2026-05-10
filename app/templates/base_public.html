@@ -58,7 +58,7 @@
             <li><a href="{{ url_for('main.services_page') }}" class="{% if request.endpoint == 'main.services_page' %}active{% endif %}">Services</a></li>
             <li><a href="{{ url_for('main.contact') }}" class="{% if request.endpoint == 'main.contact' %}active{% endif %}">Contacts</a></li>
             {% if current_user and current_user.role == 'client' %}
-            <li><a href="{{ url_for('dashboard.client_dashboard') }}" class="nav-dashboard-link {% if 'dashboard' in request.endpoint %}active{% endif %}">📊 Dashboard</a></li>
+            <!-- <li><a href="{{ url_for('dashboard.client_dashboard') }}" class="nav-dashboard-link {% if 'dashboard' in request.endpoint %}active{% endif %}">📊 Dashboard</a></li> -->
             {% endif %}
 
             {# MOBILE-ONLY AUTH LINKS #}
@@ -67,7 +67,7 @@
                 <a href="{{ url_for('auth.login') }}" class="btn-nav-outline mobile-nav-btn">Log In</a>
                 <a href="{{ url_for('auth.signup') }}" class="btn-nav-fill mobile-nav-btn">Sign Up</a>
               {% else %}
-                <a href="{{ url_for('auth.logout') }}" class="btn-nav-logout mobile-nav-btn">🚪 Logout</a>
+                <a href="{{ url_for('auth.logout') }}" class="btn-nav-logout mobile-nav-btn">Logout</a>
               {% endif %}
             </div>
           </ul>
@@ -80,8 +80,8 @@
             <a href="{{ url_for('auth.signup') }}" class="btn-nav-fill">Sign Up</a>
           {% else %}
             <div class="nav-user-area">
-              <span class="nav-user-name">👋 {{ current_user.first_name }}</span>
-              <a href="{{ url_for('auth.logout') }}" class="btn-nav-logout">🚪 Logout</a>
+              <a href="{{url_for('dashboard.client_dashboard')}}" class="nav-user-name {% if 'dashboard' in request.endpoint %}active{% endif %}"> {{current_user.first_name}} </a>
+              <a href="{{ url_for('auth.logout') }}" class="btn-nav-logout">Logout</a>
             </div>
           {% endif %}
         </div>
