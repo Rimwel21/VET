@@ -276,6 +276,9 @@
           <p>📧 {{ user.email }}</p>
           {% if user.contact %}<p>📞 {{ user.contact }}</p>{% endif %}
           <p>🗓️ Member since {{ user.created_at.strftime('%B %Y') }}</p>
+          <div style="margin-top: 15px;">
+            <a href="{{ url_for('dashboard.profile') }}" class="btn-secondary" style="background: #1a3c8f; border: none; padding: 0.5rem 1rem; font-size: 0.85rem; border-radius: 8px;">🪪 View / Edit Profile</a>
+          </div>
         </div>
       </div>
     </div>

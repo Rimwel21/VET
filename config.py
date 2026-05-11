@@ -30,18 +30,9 @@ class Config:
     PERMANENT_SESSION_LIFETIME = timedelta(hours=2)
     ENFORCE_HTTPS = os.getenv('ENFORCE_HTTPS', 'false').lower() == 'true'
 
-    VAPID_PUBLIC_KEY = os.getenv(
-        'VAPID_PUBLIC_KEY',
-        'BD9p1qDG9s8ff3E9K8QSjd1KCtzNf1wOj3mFJC60VwhTgQ0WmBoKI9BrLCMpQgo_fyFBVVWrJu6FVgqx4JbhtjA'
-    )
-    VAPID_PRIVATE_KEY = os.getenv('VAPID_PRIVATE_KEY', (
-        '-----BEGIN PRIVATE KEY-----\n'
-        'MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgtlD6aKe4UjqV0pRZ\n'
-        'G/e0jvc0nrodnWeNoZcVAsjEb0mhRANCAAQ/adagxvbPH39xPSvEEo3dSgrczX9c\n'
-        'Do95hSQutFcIU4ENFpgaCiPQaywjKUIKP38hQVVVqybuhVYKseCW4bYw\n'
-        '-----END PRIVATE KEY-----'
-    ))
-    VAPID_CLAIMS = {'sub': 'mailto:admin@vetsync.com'}
+    VAPID_PUBLIC_KEY = os.getenv('VAPID_PUBLIC_KEY')
+    VAPID_PRIVATE_KEY = os.getenv('VAPID_PRIVATE_KEY')
+    VAPID_CLAIMS = {'sub': os.getenv('VAPID_CLAIM_EMAIL', 'mailto:admin@vetsync.com')}
 
 
 class DevelopmentConfig(Config):

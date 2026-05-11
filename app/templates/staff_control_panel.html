@@ -177,6 +177,42 @@
                     <span style="color:#0EA5E9;">→</span>
                 </button>
             </div>
+
+            <!-- ✉️ PUSH NOTIFICATION SENDER -->
+            <div class="panel-card" style="padding:25px;" id="push-sender-panel">
+                <div class="card-header">
+                    <h2 style="margin:0; font-size:20px; color:#1E293B;">🔔 Send Push Notification</h2>
+                    <p style="color:#64748B; font-size:13px; margin:6px 0 0 0;">Send a custom message directly to a client's device.</p>
+                </div>
+
+                <div style="margin-bottom:14px;">
+                    <label style="font-size:13px; font-weight:700; color:#4A5568; display:block; margin-bottom:6px;">Select Recipient</label>
+                    <select id="push-recipient" style="width:100%; padding:10px 14px; border:1.5px solid #E2E8F0; border-radius:10px; font-size:14px; color:#1E293B; background:#F8FAFC;">
+                        <option value="">— Choose a client —</option>
+                        {% for client in clients %}
+                        <option value="{{ client.id }}">{{ client.first_name }} {{ client.last_name }} ({{ client.email }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div style="margin-bottom:14px;">
+                    <label style="font-size:13px; font-weight:700; color:#4A5568; display:block; margin-bottom:6px;">Notification Title</label>
+                    <input type="text" id="push-title" placeholder="e.g. Appointment Reminder" maxlength="80"
+                        style="width:100%; padding:10px 14px; border:1.5px solid #E2E8F0; border-radius:10px; font-size:14px; color:#1E293B; background:#F8FAFC; box-sizing:border-box;">
+                </div>
+
+                <div style="margin-bottom:18px;">
+                    <label style="font-size:13px; font-weight:700; color:#4A5568; display:block; margin-bottom:6px;">Message</label>
+                    <textarea id="push-message" rows="3" placeholder="e.g. Your pet's lab results are ready. Please visit the clinic." maxlength="200"
+                        style="width:100%; padding:10px 14px; border:1.5px solid #E2E8F0; border-radius:10px; font-size:14px; color:#1E293B; background:#F8FAFC; resize:vertical; box-sizing:border-box;"></textarea>
+                </div>
+
+                <button type="button" id="btn-send-push" onclick="sendCustomPush()"
+                    style="width:100%; padding:12px; background:#1a3c8f; color:#fff; font-weight:700; font-size:14px; border:none; border-radius:10px; cursor:pointer; transition:background 0.2s;">
+                    📤 Send Notification
+                </button>
+                <p id="push-send-status" style="margin-top:10px; font-size:13px; font-weight:600; display:none;"></p>
+            </div>
         </div>
 
         <!-- RIGHT COLUMN: Activity Feed -->
@@ -352,5 +388,53 @@
     });
 
     document.addEventListener('DOMContentLoaded', loadBlocked);
+
+    async function sendCustomPush() {
+        const userId = document.getElementById('push-recipient').value;
+        const title = document.getElementById('push-title').value.trim();
+        const message = document.getElementById('push-message').value.trim();
+        const statusEl = document.getElementById('push-send-status');
+        const btn = document.getElementById('btn-send-push');
+
+        if (!userId || !title || !message) {
+            statusEl.textContent = '⚠️ Please fill in all fields.';
+            statusEl.style.color = '#DC2626';
+            statusEl.style.display = 'block';
+            return;
+        }
+
+        btn.disabled = true;
+        btn.textContent = 'Sending...';
+        statusEl.style.display = 'none';
+
+        try {
+            const res = await fetch('/staff/send-custom-push', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({ user_id: userId, title: title, message: message })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                statusEl.textContent = '✅ Notification sent successfully!';
+                statusEl.style.color = '#10b981';
+                document.getElementById('push-title').value = '';
+                document.getElementById('push-message').value = '';
+                document.getElementById('push-recipient').value = '';
+            } else {
+                statusEl.textContent = '❌ ' + (data.error || 'Failed to send.');
+                statusEl.style.color = '#DC2626';
+            }
+        } catch(e) {
+            statusEl.textContent = '❌ Network error.';
+            statusEl.style.color = '#DC2626';
+        } finally {
+            statusEl.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = '📤 Send Notification';
+        }
+    }
 </script>
 {% endblock %}

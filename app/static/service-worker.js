@@ -94,7 +94,23 @@ self.addEventListener('push', (event) => {
     actions: [{ action: 'view', title: 'View Update' }],
   };
 
-  event.waitUntil(self.registration.showNotification(data.title, options));
+  event.waitUntil(
+    self.registration.showNotification(data.title, options)
+      .then(() => {
+        // Broadcast to all open tabs so they can show an in-app popup
+        return self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+          .then(windowClients => {
+            windowClients.forEach(client => {
+              client.postMessage({
+                type: 'PUSH_NOTIFICATION',
+                title: data.title,
+                body: data.body,
+                url: data.data.url
+              });
+            });
+          });
+      })
+  );
 });
 
 self.addEventListener('notificationclick', (event) => {

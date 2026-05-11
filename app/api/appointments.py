@@ -49,6 +49,17 @@ def appointments(current_user_jwt):
 
     data['date'] = booking_date
     booking = create_booking(data, current_user_jwt.id)
+    
+    # Notify staff
+    from app.models.user import User
+    staff_users = User.query.filter(User.role.in_(['staff', 'admin'])).all()
+    for staff in staff_users:
+        send_push_notification(
+            staff.id,
+            "New Booking Alert",
+            f"A new booking request from {data['name']} for {data['pet_name']} on {data['date']}."
+        )
+
     return jsonify({'message': 'Booking created successfully', 'booking_id': booking.id}), 201
 
 

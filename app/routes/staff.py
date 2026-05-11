@@ -142,11 +142,36 @@ def control_panel():
         'service': b.service_ref.name if b.service_ref else 'Unknown',
         'status': b.status,
     } for b in bookings]
+    clients = User.query.filter_by(role='client').order_by(User.first_name.asc()).all()
     return render_template(
         'staff_control_panel.html',
         user=user,
         bookings_json=json.dumps(bookings_json),
+        clients=clients,
     )
+
+
+@staff_bp.route('/send-custom-push', methods=['POST'])
+@login_required
+@staff_required
+def send_custom_push():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    title = (data.get('title') or '').strip()
+    message = (data.get('message') or '').strip()
+
+    if not user_id or not title or not message:
+        return jsonify({'error': 'All fields are required.'}), 400
+
+    target = db.session.get(User, int(user_id))
+    if not target or target.role != 'client':
+        return jsonify({'error': 'Client not found.'}), 404
+
+    sent = send_push_notification(int(user_id), title, message)
+    if sent:
+        return jsonify({'message': 'Notification sent.'}), 200
+    else:
+        return jsonify({'error': 'Client has no active push subscription. They must enable notifications first.'}), 422
 
 
 @staff_bp.route('/pet-records')

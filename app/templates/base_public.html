@@ -67,6 +67,7 @@
                 <a href="{{ url_for('auth.login') }}" class="btn-nav-outline mobile-nav-btn">Log In</a>
                 <a href="{{ url_for('auth.signup') }}" class="btn-nav-fill mobile-nav-btn">Sign Up</a>
               {% else %}
+                <a href="{{url_for('dashboard.client_dashboard')}}" class="btn-nav-outline mobile-nav-btn">🪪 {{current_user.first_name}}</a>
                 <a href="{{ url_for('auth.logout') }}" class="btn-nav-logout mobile-nav-btn">Logout</a>
               {% endif %}
             </div>
@@ -80,7 +81,7 @@
             <a href="{{ url_for('auth.signup') }}" class="btn-nav-fill">Sign Up</a>
           {% else %}
             <div class="nav-user-area">
-              <a href="{{url_for('dashboard.client_dashboard')}}" class="nav-user-name {% if 'dashboard' in request.endpoint %}active{% endif %}"> {{current_user.first_name}} </a>
+              <a href="{{url_for('dashboard.client_dashboard')}}" class="btn-nav-outline {% if 'dashboard' in request.endpoint %}active{% endif %}">🪪 {{current_user.first_name}} </a>
               <a href="{{ url_for('auth.logout') }}" class="btn-nav-logout">Logout</a>
             </div>
           {% endif %}

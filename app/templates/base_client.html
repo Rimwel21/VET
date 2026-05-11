@@ -27,17 +27,55 @@
           <li><a href="{{ url_for('main.about') }}" class="{% if request.endpoint == 'main.about' %}active{% endif %}">About</a></li>
           <li><a href="{{ url_for('main.services_page') }}" class="{% if request.endpoint == 'main.services_page' %}active{% endif %}">Services</a></li>
           <li><a href="{{ url_for('main.contact') }}" class="{% if request.endpoint == 'main.contact' %}active{% endif %}">Contacts</a></li>
-          <!-- <li><a href="{{ url_for('dashboard.client_dashboard') }}" class="nav-dashboard-link active">📊 Dashboard</a></li> -->
+          <div class="nav-mobile-auth">
+            <a href="{{url_for('dashboard.dashboard')}}" class="btn-nav-outline mobile-nav-btn">🪪 {{current_user.first_name}}</a>
+            <a href="{{ url_for('auth.logout') }}" class="btn-nav-logout mobile-nav-btn">Logout</a>
+          </div>
         </ul>
         <div class="nav-auth">
           <div class="nav-user-area">
-            <a href="{{url_for('dashboard.dashboard')}}" class="nav-user-name"> {{current_user.first_name}}</a>
+            <button type="button" id="btn-enable-push" class="btn-nav-outline" style="padding: 0.2rem 0.5rem; background-color: #dc2626; border-color: transparent;" title="Push Notifications (Disabled)">🔔</button>
+            <a href="{{url_for('dashboard.dashboard')}}" class="btn-nav-outline">🪪 {{current_user.first_name}}</a>
             <a href="{{ url_for('auth.logout') }}" class="btn-nav-logout">Logout</a>
           </div>
         </div>
         <button class="hamburger" type="button" onclick="toggleMenu()">☰</button>
       </div>
     </nav>
+
+    <!-- In-App Notification Container -->
+    <div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999; pointer-events: none; display: flex; flex-direction: column; gap: 10px;"></div>
+
+    <style>
+      .in-app-toast {
+        background: white;
+        border-left: 5px solid #1a3c8f;
+        padding: 16px 20px;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(26, 60, 143, 0.2);
+        min-width: 280px;
+        max-width: 400px;
+        pointer-events: auto;
+        animation: toastSlideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        cursor: pointer;
+        transition: transform 0.2s, box-shadow 0.2s;
+        border: 1px solid #eef2ff;
+      }
+      .in-app-toast:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 30px rgba(26, 60, 143, 0.25);
+      }
+      @keyframes toastSlideIn {
+        from { transform: translateX(120%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+      }
+      @keyframes toastSlideOut {
+        from { transform: translateX(0); opacity: 1; }
+        to { transform: translateX(120%); opacity: 0; }
+      }
+      .toast-header { font-weight: 800; color: #1a3c8f; font-size: 0.95rem; margin-bottom: 4px; display: flex; align-items: center; gap: 8px; }
+      .toast-msg { font-size: 0.85rem; color: #64748b; line-height: 1.4; }
+    </style>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
@@ -56,5 +94,150 @@
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block extra_js %}{% endblock %}
     {% include 'chatbot.html' %}
+
+    <script>
+    // Register Service Worker for push notifications
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register("{{ url_for('main.service_worker') }}", { scope: "/" })
+            .then(reg => {
+                console.log('SW registered:', reg.scope);
+            })
+            .catch(err => console.error('SW registration failed:', err));
+
+        // Listen for messages from SW (for in-app popups)
+        navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'PUSH_NOTIFICATION') {
+                showInAppToast(event.data.title, event.data.body, event.data.url);
+            }
+        });
+    }
+
+    function showInAppToast(title, body, url) {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+
+        const toast = document.createElement('div');
+        toast.className = 'in-app-toast';
+        toast.onclick = () => {
+            if (url) window.location.href = url;
+            else toast.remove();
+        };
+
+        toast.innerHTML = `
+            <div class="toast-header">🔔 ${title}</div>
+            <div class="toast-msg">${body}</div>
+        `;
+
+        container.appendChild(toast);
+
+        // Auto remove after 10 seconds
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.style.animation = 'toastSlideOut 0.4s ease-in forwards';
+                setTimeout(() => toast.remove(), 400);
+            }
+        }, 10000);
+    }
+    </script>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        const pushBtn = document.getElementById('btn-enable-push');
+        if (!pushBtn) return;
+
+        let isSubscribed = false;
+
+        const updateBtnState = () => {
+            if (isSubscribed) {
+                pushBtn.style.backgroundColor = '#10b981'; // Green
+                pushBtn.title = "Push Notifications (Enabled) - Click to Disable";
+            } else {
+                pushBtn.style.backgroundColor = '#dc2626'; // Red
+                pushBtn.title = "Push Notifications (Disabled) - Click to Enable";
+            }
+        };
+
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+            pushBtn.style.display = 'none';
+            return;
+        }
+
+        try {
+            const reg = await navigator.serviceWorker.ready;
+            const sub = await reg.pushManager.getSubscription();
+            if (sub) {
+                isSubscribed = true;
+                updateBtnState();
+            }
+        } catch(e) {}
+
+        pushBtn.addEventListener('click', async () => {
+            try {
+                pushBtn.style.opacity = '0.5';
+                const reg = await navigator.serviceWorker.ready;
+
+                if (isSubscribed) {
+                    // Unsubscribe flow
+                    const sub = await reg.pushManager.getSubscription();
+                    if (sub) {
+                        await fetch('/api/v1/push/unsubscribe', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+                            },
+                            body: JSON.stringify({ endpoint: sub.endpoint })
+                        });
+                        await sub.unsubscribe();
+                    }
+                    isSubscribed = false;
+                    updateBtnState();
+                } else {
+                    // Subscribe flow
+                    const permission = await Notification.requestPermission();
+                    if (permission !== 'granted') {
+                        pushBtn.style.opacity = '1';
+                        return;
+                    }
+
+                    const keyRes = await fetch('/api/v1/push/public-key');
+                    if(!keyRes.ok) throw new Error("Could not fetch VAPID key");
+                    const keyData = await keyRes.json();
+                    
+                    const padding = '='.repeat((4 - keyData.public_key.length % 4) % 4);
+                    const base64 = (keyData.public_key + padding).replace(/\-/g, '+').replace(/_/g, '/');
+                    const rawData = window.atob(base64);
+                    const outputArray = new Uint8Array(rawData.length);
+                    for (let i = 0; i < rawData.length; ++i) {
+                        outputArray[i] = rawData.charCodeAt(i);
+                    }
+
+                    const subscription = await reg.pushManager.subscribe({
+                        userVisibleOnly: true,
+                        applicationServerKey: outputArray
+                    });
+
+                    const subRes = await fetch('/api/v1/push/subscribe', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify(subscription)
+                    });
+
+                    if (subRes.ok) {
+                        isSubscribed = true;
+                        updateBtnState();
+                    }
+                }
+            } catch (error) {
+                console.error('Error toggling push:', error);
+            } finally {
+                pushBtn.style.opacity = '1';
+            }
+        });
+    });
+    </script>
   </body>
 </html>

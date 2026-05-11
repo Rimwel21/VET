@@ -1,35 +1,53 @@
 import json
 from flask import current_app
 from pywebpush import webpush, WebPushException
-from app.extensions import db
 from app.models.notification import PushSubscription
 
-
-def send_push_notification(user_id: int, title: str, body: str, url: str = None):
-    """Sends a web push notification to all subscribed devices of a user."""
+def send_push_notification(user_id, title, body, url="/dashboard"):
+    """
+    Sends a push notification to all devices registered by the user.
+    """
     subscriptions = PushSubscription.query.filter_by(user_id=user_id).all()
-    payload = {
+    if not subscriptions:
+        return False
+        
+    vapid_private_key = current_app.config.get('VAPID_PRIVATE_KEY')
+    vapid_claims = current_app.config.get('VAPID_CLAIMS')
+    
+    if not vapid_private_key:
+        current_app.logger.error("VAPID_PRIVATE_KEY not configured")
+        return False
+
+    payload = json.dumps({
         "title": title,
         "body": body,
-        "icon": "/static/images/vet-dog.png",
-        "data": {"url": url or "/dashboard"}
-    }
+        "data": {"url": url}
+    })
 
+    success = False
     for sub in subscriptions:
+        sub_info = {
+            "endpoint": sub.endpoint,
+            "keys": {
+                "p256dh": sub.p256dh,
+                "auth": sub.auth
+            }
+        }
+        
         try:
             webpush(
-                subscription_info={
-                    "endpoint": sub.endpoint,
-                    "keys": {"p256dh": sub.p256dh, "auth": sub.auth}
-                },
-                data=json.dumps(payload),
-                vapid_private_key=current_app.config['VAPID_PRIVATE_KEY'],
-                vapid_claims=current_app.config['VAPID_CLAIMS']
+                subscription_info=sub_info,
+                data=payload,
+                vapid_private_key=vapid_private_key,
+                vapid_claims=vapid_claims
             )
+            success = True
         except WebPushException as ex:
-            print(f"Push failed for user {user_id}: {ex}")
+            current_app.logger.error(f"Web push failed: {repr(ex)}")
+            # If subscription is expired/invalid, we could delete it here
             if ex.response and ex.response.status_code in [404, 410]:
+                from app.extensions import db
                 db.session.delete(sub)
                 db.session.commit()
-        except Exception as e:
-            print(f"Unexpected push error: {e}")
+                
+    return success

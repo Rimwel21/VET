@@ -31,6 +31,34 @@ def client_dashboard():
     return render_template('dashboard.html', user=user, bookings=bookings)
 
 
+@dashboard_bp.route('/dashboard/profile', methods=['GET', 'POST'])
+@login_required
+def profile():
+    from flask import request, flash
+    from app.utils.sanitize import clean_input
+    
+    user = _get_current_user()
+    
+    if request.method == 'POST':
+        # Simple update logic for contact
+        contact = clean_input(request.form.get('contact', ''))
+        first_name = clean_input(request.form.get('first_name', ''))
+        last_name = clean_input(request.form.get('last_name', ''))
+        
+        if contact and first_name and last_name:
+            user.contact = contact
+            user.first_name = first_name
+            user.last_name = last_name
+            db.session.commit()
+            flash('Profile updated successfully!', 'success')
+            return redirect(url_for('dashboard.client_dashboard'))
+        else:
+            flash('Please provide valid details.', 'error')
+            return redirect(url_for('dashboard.profile'))
+            
+    return render_template('profile.html', user=user)
+
+
 @dashboard_bp.route('/admin/dashboard')
 @login_required
 @admin_required

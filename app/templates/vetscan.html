@@ -10,14 +10,14 @@
   <div class="vetscan-container">
     <div class="vetscan-topbar">
       {% if current_user %}
-      <a href="{{ url_for('dashboard.dashboard') }}" class="vs-back-btn" aria-label="Back to dashboard">
-        <span aria-hidden="true">&larr;</span>
-        Back to Dashboard
+      <a href="{{ url_for('dashboard.dashboard') }}" class="btn-back-home" aria-label="Back to dashboard">
+        <span class="arrow">&larr;</span>
+        <span>Back to Dashboard</span>
       </a>
       {% else %}
-      <a href="{{ url_for('main.index') }}" class="vs-back-btn" aria-label="Back to home">
-        <span aria-hidden="true">&larr;</span>
-        Back to Home
+      <a href="{{ url_for('main.index') }}" class="btn-back-home" aria-label="Back to home">
+        <span class="arrow">&larr;</span>
+        <span>Back to Home</span>
       </a>
       {% endif %}
 

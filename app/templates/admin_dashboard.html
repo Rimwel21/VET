@@ -1130,7 +1130,6 @@
             btn.disabled = true;
             btn.innerText = 'Saving...';
             
-            // we use the main update endpoint for full capability
             const res = await fetch(`/api/v1/reports/${currentReportId}`, {
                 method: 'PUT',
                 headers,
@@ -1140,11 +1139,23 @@
             if (!res.ok) throw new Error('Update failed');
             
             appendAudit('Updated clinical report content/status');
+            
+            // Show success alert
+            alert('✅ Changes saved successfully!');
+            
+            // Reset detail panel and reload list
+            document.getElementById('reviewBox').style.display = 'none';
+            document.getElementById('reportTitle').textContent = 'Select a report';
+            document.getElementById('reportContent').textContent = 'Report content will appear here.';
+            currentReportId = null;
+            
             await loadReports();
-            loadReport(currentReportId);
+            
+            // Scroll to reports section
+            document.getElementById('clinical-reports').scrollIntoView({ behavior: 'smooth' });
         } catch (error) {
             appendAudit(error.message, 'Issue');
-            alert('Failed to save. Please try again.');
+            alert('❌ Failed to save. Please try again.');
         } finally {
             btn.disabled = false;
             btn.innerText = 'Save Changes';
@@ -1167,11 +1178,23 @@
             if (!res.ok) throw new Error('Deletion failed');
             
             appendAudit('Soft deleted clinical report');
+            
+            // Show success alert
+            alert('✅ Report deleted successfully!');
+            
+            // Reset detail panel and reload list
+            document.getElementById('reviewBox').style.display = 'none';
+            document.getElementById('reportTitle').textContent = 'Select a report';
+            document.getElementById('reportContent').textContent = 'Report content will appear here.';
+            currentReportId = null;
+            
             await loadReports();
-            loadReport(currentReportId);
+            
+            // Scroll to reports section
+            document.getElementById('clinical-reports').scrollIntoView({ behavior: 'smooth' });
         } catch (error) {
             appendAudit(error.message, 'Issue');
-            alert('Failed to delete. Please try again.');
+            alert('❌ Failed to delete. Please try again.');
         }
     }
 

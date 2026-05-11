@@ -57,29 +57,37 @@ def report_detail(current_user_jwt, report_id):
 
     if request.method == 'PUT':
         data = request.get_json()
-        if 'status' in data:
-            report.status = data['status']
-        if 'admin_comment' in data:
-            report.admin_comment = data['admin_comment']
         
-        # Check if content actually changed before logging history
+        new_status = data.get('status', report.status)
+        new_comment = data.get('admin_comment', report.admin_comment or '')
         new_title = data.get('title', report.title)
         new_desc = data.get('description', report.description)
         
-        if new_title != report.title or new_desc != report.description:
-            # store previous version in history array
+        # Detect if anything actually changed
+        content_changed = (new_title != report.title or new_desc != report.description)
+        feedback_changed = (new_comment != (report.admin_comment or ''))
+        status_changed = (new_status != report.status)
+        
+        if content_changed or feedback_changed or status_changed:
             history_entry = {
                 "title": report.title,
                 "content": report.description,
+                "admin_comment": report.admin_comment or '',
+                "status": report.status,
                 "edited_at": datetime.utcnow().isoformat(),
                 "edited_by": "admin"
             }
             hist = list(report.edit_history) if report.edit_history else []
             hist.append(history_entry)
             report.edit_history = hist
-            
-            report.title = new_title
-            report.description = new_desc
+        
+        report.status = new_status
+        report.admin_comment = new_comment
+        report.admin_review_status = new_status
+        report.title = new_title
+        report.description = new_desc
+        report.reviewed_by = current_user_jwt.id
+        report.reviewed_at = datetime.utcnow()
 
         db.session.commit()
         return jsonify({'message': 'Report updated successfully'})

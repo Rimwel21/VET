@@ -996,6 +996,7 @@
         try {
             const formData = new FormData();
             formData.append('status', newStatus);
+            formData.append('csrf_token', document.querySelector('meta[name="csrf-token"]').content);
             const res = await fetch(`/staff/booking/${id}/status`, { method: 'POST', body: formData });
 
             if(res.ok) {
@@ -1021,7 +1022,10 @@
         if(!confirm("Mark this appointment as cancelled?")) return;
         
         try {
-            const res = await fetch(`/staff/booking/${id}/delete`, { method: 'POST' });
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+            const formData = new FormData();
+            formData.append('csrf_token', csrfToken);
+            const res = await fetch(`/staff/booking/${id}/delete`, { method: 'POST', body: formData });
             if(res.ok) {
                 const app = rawBookings.find(b => b.id === id);
                 if(app) app.status = 'cancelled';
