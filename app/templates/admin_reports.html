@@ -1,0 +1,338 @@
+{% extends "base_admin.html" %}
+{% block title %}Clinical Reports - VetSync Admin{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --admin-primary: #1a3c8f;
+        --admin-primary-mid: #1e5bbf;
+        --admin-accent: #00c9b1;
+        --admin-bg: #f0f7ff;
+        --admin-surface: rgba(255, 255, 255, 0.9);
+        --admin-border: #d9e6f7;
+        --admin-text: #1a202c;
+        --admin-muted: #8090b0;
+        --admin-shadow: 0 12px 48px rgba(26, 60, 143, 0.12);
+        --admin-radius: 16px;
+    }
+
+    body { background: var(--admin-bg); }
+
+    .admin-shell {
+        min-height: 100vh;
+        padding: 6rem 2rem 4rem;
+        background: radial-gradient(circle at top right, rgba(0, 201, 177, 0.13), transparent 34rem), linear-gradient(180deg, #f8fbff 0%, var(--admin-bg) 100%);
+    }
+
+    .admin-container {
+        max-width: 1280px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .admin-hero {
+        padding: 2.5rem;
+        border-radius: var(--admin-radius);
+        background: linear-gradient(135deg, var(--admin-primary), var(--admin-primary-mid));
+        color: #fff;
+        box-shadow: var(--admin-shadow);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .admin-hero::after {
+        content: ""; position: absolute; inset: 0;
+        background-image: radial-gradient(circle, rgba(255,255,255,0.28) 1px, transparent 1px);
+        background-size: 26px 26px; opacity: 0.14;
+    }
+
+    .admin-hero > * { position: relative; z-index: 1; }
+
+    .admin-eyebrow { color: var(--admin-accent); font-size: 0.75rem; font-weight: 800; text-transform: uppercase; margin-bottom: 0.35rem; }
+    .admin-title { font-family: 'Nunito', sans-serif; font-size: clamp(2rem, 4vw, 3rem); font-weight: 900; margin: 0 0 0.55rem; }
+    .admin-subtitle { max-width: 680px; color: rgba(255,255,255,0.78); line-height: 1.65; }
+
+    .report-container {
+        display: grid;
+        grid-template-columns: 380px 1fr;
+        gap: 1.5rem;
+        height: calc(100vh - 22rem);
+        min-height: 600px;
+    }
+
+    .report-list, .report-detail {
+        background: var(--admin-surface);
+        border: 1px solid var(--admin-border);
+        border-radius: var(--admin-radius);
+        box-shadow: var(--admin-shadow);
+        backdrop-filter: blur(12px);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .report-list-header {
+        padding: 1.25rem;
+        border-bottom: 1px solid var(--admin-border);
+        background: #f8fbff;
+    }
+
+    #reportSearch {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 1.5px solid var(--admin-border);
+        border-radius: 999px;
+        font-size: 0.88rem;
+        outline: none;
+    }
+
+    .report-scroll {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0.75rem;
+    }
+
+    .report-item {
+        padding: 1rem;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+        margin-bottom: 0.5rem;
+    }
+
+    .report-item:hover { background: #f0f7ff; }
+    .report-item.active { background: #fff; border-color: var(--admin-accent); box-shadow: 0 4px 12px rgba(0,201,177,0.15); }
+
+    .report-item-title { font-weight: 800; color: var(--admin-primary); display: block; margin-bottom: 4px; }
+    
+    .report-detail-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid var(--admin-border);
+        background: #fff;
+    }
+
+    .report-detail-body {
+        padding: 2rem;
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .status-pill {
+        padding: 0.25rem 0.6rem;
+        border-radius: 999px;
+        font-size: 0.68rem;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .status-pending { background: #fef3c7; color: #92400e; }
+    .status-reviewed { background: #dcfce7; color: #166534; }
+    .status-needs_action { background: #fee2e2; color: #991b1b; }
+
+    .btn {
+        padding: 0.6rem 1.2rem;
+        border-radius: 999px;
+        font-weight: 800;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 1.5px solid var(--admin-border);
+    }
+    .btn.primary { background: var(--admin-primary); color: white; border-color: var(--admin-primary); }
+    .btn.danger-outline { color: #dc2626; border-color: #fee2e2; }
+    .btn.danger-outline:hover { background: #fee2e2; }
+
+    @media (max-width: 1024px) {
+        .report-container { grid-template-columns: 1fr; height: auto; display: flex; flex-direction: column; gap: 1rem; }
+        .report-list { height: 320px; order: 2; }
+        .report-detail { order: 1; min-height: 450px; }
+        .admin-shell { padding: 5.5rem 1rem 2rem; }
+    }
+    @media (max-width: 640px) {
+        .report-detail-body { padding: 1rem; }
+        .btn { width: 100%; text-align: center; justify-content: center; margin-bottom: 0.5rem; }
+        .report-detail-header h2 { font-size: 1.1rem; }
+        .report-hero { padding: 1.5rem; }
+    }
+</style>
+
+<section class="admin-shell">
+    <div class="admin-container">
+        <header class="admin-hero">
+            <div>
+                <p class="admin-eyebrow">Quality Control</p>
+                <h1 class="admin-title">Submitted Reports</h1>
+                <p class="admin-subtitle">Review clinical summaries, add feedback, and maintain documentation integrity.</p>
+            </div>
+        </header>
+
+        <div class="report-container">
+            <aside class="report-list">
+                <div class="report-list-header">
+                    <input type="text" id="reportSearch" placeholder="Search reports...">
+                </div>
+                <div class="report-scroll" id="inlineReportList">
+                    <div class="empty-row" style="padding:2rem; text-align:center; color:var(--admin-muted);">Loading reports...</div>
+                </div>
+            </aside>
+
+            <main class="report-detail" id="reportDetailPanel">
+                <div class="report-detail-header">
+                    <h2 id="reportTitle" style="color:var(--admin-primary); font-family:'Nunito',sans-serif; font-weight:900; margin:0;">Select a report</h2>
+                </div>
+                <div class="report-detail-body">
+                    <div id="reportStaticContent" style="margin-bottom:2rem; line-height:1.6; color:var(--admin-text);">
+                        Select a report from the list to view and manage its details.
+                    </div>
+                    
+                    <div id="reviewBox" style="display:none; flex-direction:column; gap:1.25rem; border-top:1px solid var(--admin-border); padding-top:1.5rem;">
+                        <div>
+                            <label style="font-weight:800; color:var(--admin-primary); font-size:0.8rem; display:block; margin-bottom:8px;">Correction Authority (Edit Content)</label>
+                            <textarea id="adminEditContent" rows="6" style="width:100%; padding:1rem; border-radius:12px; border:1.5px solid var(--admin-border); font-family:inherit;"></textarea>
+                        </div>
+                        <div>
+                            <label style="font-weight:800; color:var(--admin-primary); font-size:0.8rem; display:block; margin-bottom:8px;">Admin Feedback / Comment</label>
+                            <textarea id="adminComment" rows="3" style="width:100%; padding:1rem; border-radius:12px; border:1.5px solid var(--admin-border); font-family:inherit;"></textarea>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+                            <div style="flex:1; min-width:200px;">
+                                <label style="font-weight:800; color:var(--admin-primary); font-size:0.8rem; display:block; margin-bottom:8px;">Review Status</label>
+                                <select id="reviewStatus" style="width:100%; padding:0.75rem; border-radius:999px; border:1.5px solid var(--admin-border);">
+                                    <option value="pending">Pending Review</option>
+                                    <option value="reviewed">Reviewed & Approved</option>
+                                    <option value="needs_action">Needs Correction</option>
+                                    <option value="resolved">Resolved</option>
+                                </select>
+                            </div>
+                            <div style="display:flex; gap:0.75rem; margin-top:auto;">
+                                <button class="btn primary" onclick="submitReview()">Save Changes</button>
+                                <button class="btn danger-outline" id="btnSoftDelete" onclick="deleteReport()">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+</section>
+
+<script>
+    let allReports = [];
+    let currentReportId = null;
+
+    function getAuthHeaders() {
+        const token = localStorage.getItem('access_token');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        return { 
+            'Content-Type': 'application/json', 
+            'Authorization': `Bearer ${token}`,
+            'X-CSRF-Token': csrfToken
+        };
+    }
+
+    async function loadReports() {
+        const headers = getAuthHeaders();
+        const inlineList = document.getElementById('inlineReportList');
+        try {
+            const res = await fetch('/api/v1/reports', { headers });
+            if (!res.ok) throw new Error('Unable to load reports');
+            allReports = await res.json();
+            inlineList.innerHTML = allReports.length ? '' : '<div style="padding:2rem; text-align:center;">No reports found.</div>';
+
+            allReports.forEach((r) => {
+                const statusStr = r.is_deleted ? 'DELETED' : (r.status || 'Pending').toUpperCase();
+                const statusClass = r.is_deleted ? 'status-needs_action' : `status-${(r.status || 'Pending').toLowerCase()}`;
+                
+                inlineList.insertAdjacentHTML('beforeend', `
+                    <div class="report-item" onclick="loadReport(${r.id})">
+                        <span class="report-item-title" style="${r.is_deleted ? 'text-decoration:line-through; opacity:0.5;' : ''}">${r.title}</span>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span style="font-size:0.75rem; color:var(--admin-muted);">${r.staff_name} • ${r.created_at}</span>
+                            <span class="status-pill ${statusClass}">${statusStr}</span>
+                        </div>
+                    </div>
+                `);
+            });
+        } catch (e) {
+            inlineList.innerHTML = '<div style="padding:2rem; text-align:center;">Unavailable.</div>';
+        }
+    }
+
+    function loadReport(id) {
+        const report = allReports.find(r => r.id === id);
+        if (!report) return;
+        currentReportId = id;
+        
+        document.querySelectorAll('.report-item').forEach(el => el.classList.remove('active'));
+        if (event && event.currentTarget) event.currentTarget.classList.add('active');
+
+        const statusStr = report.is_deleted ? 'DELETED' : (report.status || 'Pending').toUpperCase();
+        const statusClass = report.is_deleted ? 'status-needs_action' : `status-${(report.status || 'Pending').toLowerCase()}`;
+        
+        document.getElementById('reportTitle').innerHTML = `${report.title} <span class="status-pill ${statusClass}" style="margin-left:10px;">${statusStr}</span>`;
+        
+        document.getElementById('reportStaticContent').innerHTML = `
+            <div style="background:#f8fbff; padding:1rem; border-radius:12px; margin-bottom:1.5rem; display:grid; grid-template-columns:1fr 1fr; gap:1rem; font-size:0.85rem;">
+                <div><strong>Category:</strong> ${report.category}</div>
+                <div><strong>Submitted By:</strong> ${report.staff_name}</div>
+                <div><strong>Date:</strong> ${report.created_at}</div>
+                <div><strong>Reviewed By:</strong> ${report.reviewed_by || 'Not yet reviewed'}</div>
+            </div>
+            <div style="font-weight:700; color:var(--admin-primary); margin-bottom:0.5rem;">Original Submission:</div>
+            <div style="white-space:pre-wrap; background:#fff; padding:1rem; border:1px solid var(--admin-border); border-radius:12px;">${report.description}</div>
+        `;
+
+        document.getElementById('adminEditContent').value = report.description || '';
+        document.getElementById('adminComment').value = report.admin_comment || '';
+        document.getElementById('reviewStatus').value = (report.admin_review_status || report.status || 'pending').toLowerCase();
+        document.getElementById('reviewBox').style.display = 'flex';
+        document.getElementById('btnSoftDelete').style.display = report.is_deleted ? 'none' : 'block';
+    }
+
+    async function submitReview() {
+        if (!currentReportId) return;
+        const payload = {
+            status: document.getElementById('reviewStatus').value,
+            admin_comment: document.getElementById('adminComment').value,
+            description: document.getElementById('adminEditContent').value
+        };
+        try {
+            const res = await fetch(`/api/v1/reports/${currentReportId}`, {
+                method: 'PUT',
+                headers: getAuthHeaders(),
+                body: JSON.stringify(payload)
+            });
+            if (res.ok) {
+                alert('Success: Report changes have been saved.');
+                window.location.href = '/admin/reports'; // Redirect back to list
+            } else {
+                alert('Error: Failed to save changes.');
+            }
+        } catch (e) {
+            alert('System Error: Unable to reach the server.');
+        }
+    }
+
+    async function deleteReport() {
+        if (!confirm("Delete this report?")) return;
+        try {
+            const res = await fetch(`/api/v1/reports/${currentReportId}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders()
+            });
+            if (res.ok) {
+                alert('Report deleted successfully.');
+                window.location.href = '/admin/reports'; // Redirect back to list
+            } else {
+                alert('Error: Failed to delete report.');
+            }
+        } catch (e) {
+            alert('System Error: Unable to reach the server.');
+        }
+    }
+
+    window.addEventListener('load', loadReports);
+</script>
+{% endblock %}

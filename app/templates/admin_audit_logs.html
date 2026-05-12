@@ -3,125 +3,195 @@
 
 {% block content %}
 <style>
-    .audit-container {
-        max-width: 1200px;
-        margin: 100px auto 40px;
-        padding: 0 20px;
+    :root {
+        --admin-primary: #1a3c8f;
+        --admin-primary-mid: #1e5bbf;
+        --admin-accent: #00c9b1;
+        --admin-bg: #f0f7ff;
+        --admin-surface: rgba(255, 255, 255, 0.9);
+        --admin-border: #d9e6f7;
+        --admin-text: #1a202c;
+        --admin-muted: #8090b0;
+        --admin-shadow: 0 12px 48px rgba(26, 60, 143, 0.12);
+        --admin-radius: 16px;
     }
-    .audit-header {
-        margin-bottom: 30px;
+
+    body { background: var(--admin-bg); }
+
+    .admin-shell {
+        min-height: 100vh;
+        padding: 6rem 2rem 4rem;
+        background: radial-gradient(circle at top right, rgba(0, 201, 177, 0.13), transparent 34rem), linear-gradient(180deg, #f8fbff 0%, var(--admin-bg) 100%);
+    }
+
+    .admin-container {
+        max-width: 1280px;
+        margin: 0 auto;
         display: flex;
-        justify-content: space-between;
-        align-items: center;
+        flex-direction: column;
+        gap: 1.5rem;
     }
-    .audit-card {
-        background: white;
-        border: 1px solid #E2E8F0;
-        border-radius: 20px;
+
+    .admin-hero {
+        padding: 2.5rem;
+        border-radius: var(--admin-radius);
+        background: linear-gradient(135deg, var(--admin-primary), var(--admin-primary-mid));
+        color: #fff;
+        box-shadow: var(--admin-shadow);
+        position: relative;
         overflow: hidden;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     }
-    .audit-table {
+
+    .admin-hero::after {
+        content: ""; position: absolute; inset: 0;
+        background-image: radial-gradient(circle, rgba(255,255,255,0.28) 1px, transparent 1px);
+        background-size: 26px 26px; opacity: 0.14;
+    }
+
+    .admin-hero > * { position: relative; z-index: 1; }
+
+    .admin-eyebrow { color: var(--admin-accent); font-size: 0.75rem; font-weight: 800; text-transform: uppercase; margin-bottom: 0.35rem; }
+    .admin-title { font-family: 'Nunito', sans-serif; font-size: clamp(2rem, 4vw, 3rem); font-weight: 900; margin: 0 0 0.55rem; }
+    .admin-subtitle { max-width: 680px; color: rgba(255,255,255,0.78); line-height: 1.65; }
+
+    .section-card {
+        padding: 1.5rem;
+        border: 1px solid var(--admin-border);
+        border-radius: var(--admin-radius);
+        background: var(--admin-surface);
+        box-shadow: var(--admin-shadow);
+        backdrop-filter: blur(12px);
+    }
+
+    .table-wrap {
+        overflow-x: auto;
+        border-radius: 12px;
+        border: 1px solid #edf3fb;
+        background: white;
+    }
+
+    .dash-table {
         width: 100%;
+        min-width: 900px;
         border-collapse: collapse;
     }
-    .audit-table th {
-        background: #F8FAFC;
-        padding: 15px 20px;
+
+    .dash-table th, .dash-table td {
+        padding: 1rem;
         text-align: left;
-        font-size: 13px;
-        font-weight: 700;
-        color: #64748B;
+        border-bottom: 1px solid #edf3fb;
+    }
+
+    .dash-table th {
+        background: #f8fbff;
+        color: var(--admin-muted);
+        font-size: 0.72rem;
+        font-weight: 900;
         text-transform: uppercase;
-        border-bottom: 1px solid #E2E8F0;
+        letter-spacing: 0.05em;
     }
-    .audit-table td {
-        padding: 16px 20px;
-        border-bottom: 1px solid #F1F5F9;
-        font-size: 14px;
-        color: #1E293B;
-    }
+
+    .dash-table td { font-size: 0.9rem; color: var(--admin-text); }
+
     .log-badge {
-        font-size: 11px;
-        font-weight: 700;
-        padding: 2px 8px;
-        border-radius: 8px;
+        font-size: 0.65rem;
+        font-weight: 900;
+        padding: 0.25rem 0.6rem;
+        border-radius: 999px;
         text-transform: uppercase;
     }
-    .type-security { background: #FEE2E2; color: #991B1B; }
-    .type-staff { background: #E0F2FE; color: #0369A1; }
-    .type-system { background: #F1F5F9; color: #475569; }
+
+    .type-security { background: #fee2e2; color: #991b1b; }
+    .type-staff { background: #e0f2fe; color: #0369a1; }
+    .type-system { background: #f1f5f9; color: #475569; }
+
+    .btn {
+        padding: 0.6rem 1.25rem;
+        border-radius: 999px;
+        font-weight: 800;
+        font-size: 0.85rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 1.5px solid var(--admin-border);
+        background: #fff;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .btn.primary { background: var(--admin-primary); color: white; border-color: var(--admin-primary); }
+
+    @media (max-width: 768px) {
+        .admin-shell { padding: 5.5rem 1rem 3rem; }
+        .admin-hero { padding: 1.5rem; }
+    }
 </style>
 
-<div class="audit-container">
-    <div class="audit-header">
-        <div>
-            <h1 style="font-size: 28px; font-weight: 900; color: #1E293B;">System <span>Audit Logs</span></h1>
-            <p style="color: #64748B; font-size: 15px; margin-top: 5px;">Historical record of all system activity, staff actions, and security events.</p>
-        </div>
-        <div style="display: flex; gap: 10px;">
-            <button class="action-btn" style="background: white; border: 1px solid #E2E8F0; padding: 10px 18px; border-radius: 10px; font-weight: 600; cursor: pointer;">📥 Export CSV</button>
-            <button class="action-btn" style="background: #0EA5E9; color: white; border: none; padding: 10px 18px; border-radius: 10px; font-weight: 600; cursor: pointer;">🔄 Refresh Logs</button>
-        </div>
-    </div>
+<section class="admin-shell">
+    <div class="admin-container">
+        <header class="admin-hero">
+            <div style="display:flex; justify-content:space-between; align-items:flex-end; width:100%; flex-wrap:wrap; gap:1.5rem;">
+                <div>
+                    <p class="admin-eyebrow">Audit Trail</p>
+                    <h1 class="admin-title">System Audit Logs</h1>
+                    <p class="admin-subtitle">Historical record of all system activity, staff actions, and security events across the ecosystem.</p>
+                </div>
+                <div style="display:flex; gap:0.75rem;">
+                    <button class="btn">📥 Export Logs</button>
+                    <button class="btn primary">🔄 Refresh Feed</button>
+                </div>
+            </div>
+        </header>
 
-    <div class="audit-card">
-        <table class="audit-table">
-            <thead>
-                <tr>
-                    <th>Timestamp</th>
-                    <th>User</th>
-                    <th>Action Type</th>
-                    <th>Description</th>
-                    <th>IP Address</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Mock Audit Data -->
-                <tr>
-                    <td style="color: #64748B;">2026-05-01 14:22:10</td>
-                    <td><strong>admin_test</strong></td>
-                    <td><span class="log-badge type-security">Login Failed</span></td>
-                    <td>Invalid password attempt for account <em>admin_test</em>.</td>
-                    <td style="font-family: monospace;">192.168.1.45</td>
-                </tr>
-                <tr>
-                    <td style="color: #64748B;">2026-05-01 13:45:05</td>
-                    <td><strong>Dr. Smith</strong></td>
-                    <td><span class="log-badge type-staff">Booking Update</span></td>
-                    <td>Changed status of Booking #1042 to <em>Completed</em>.</td>
-                    <td style="font-family: monospace;">10.0.0.12</td>
-                </tr>
-                <tr>
-                    <td style="color: #64748B;">2026-05-01 12:00:00</td>
-                    <td><strong>System</strong></td>
-                    <td><span class="log-badge type-system">Backup</span></td>
-                    <td>Daily database backup completed successfully to cloud storage.</td>
-                    <td style="font-family: monospace;">internal</td>
-                </tr>
-                <tr>
-                    <td style="color: #64748B;">2026-05-01 10:05:32</td>
-                    <td><strong>Jane Doe</strong></td>
-                    <td><span class="log-badge type-security">Account Created</span></td>
-                    <td>Admin Jane Doe created new staff account: <em>vet_assistant_02</em>.</td>
-                    <td style="font-family: monospace;">192.168.1.10</td>
-                </tr>
-                <tr>
-                    <td style="color: #64748B;">2026-04-30 18:12:00</td>
-                    <td><strong>System</strong></td>
-                    <td><span class="log-badge type-system">Config Change</span></td>
-                    <td>Global setting <em>Push Notifications</em> changed from <em>Disabled</em> to <em>Enabled</em>.</td>
-                    <td style="font-family: monospace;">192.168.1.10</td>
-                </tr>
-                <tr>
-                    <td style="color: #64748B;">2026-04-30 16:45:12</td>
-                    <td><strong>Dr. Brown</strong></td>
-                    <td><span class="log-badge type-staff">Record Delete</span></td>
-                    <td>Staff Dr. Brown deleted archived pet record (ID: 442).</td>
-                    <td style="font-family: monospace;">10.0.0.15</td>
-                </tr>
-            </tbody>
-        </table>
+        <section class="section-card">
+            <div class="table-wrap">
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>User</th>
+                            <th>Action Type</th>
+                            <th>Description</th>
+                            <th>IP Address</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2026-05-12 14:22:10</td>
+                            <td><strong>admin_main</strong></td>
+                            <td><span class="log-badge type-security">Auth Success</span></td>
+                            <td>Secure login established via primary admin console.</td>
+                            <td style="font-family:monospace; opacity:0.6;">192.168.1.45</td>
+                        </tr>
+                        <tr>
+                            <td>2026-05-12 13:45:05</td>
+                            <td><strong>Dr. Smith</strong></td>
+                            <td><span class="log-badge type-staff">Booking Update</span></td>
+                            <td>Changed status of Booking #1042 to <em>Completed</em>.</td>
+                            <td style="font-family:monospace; opacity:0.6;">10.0.0.12</td>
+                        </tr>
+                        <tr>
+                            <td>2026-05-12 12:00:00</td>
+                            <td><strong>System</strong></td>
+                            <td><span class="log-badge type-system">Backup</span></td>
+                            <td>Cloud database backup completed successfully.</td>
+                            <td style="font-family:monospace; opacity:0.6;">internal</td>
+                        </tr>
+                        <tr>
+                            <td>2026-05-11 10:05:32</td>
+                            <td><strong>Admin Jane</strong></td>
+                            <td><span class="log-badge type-security">User Created</span></td>
+                            <td>New staff account provisioned for Vet Assistant Team.</td>
+                            <td style="font-family:monospace; opacity:0.6;">192.168.1.10</td>
+                        </tr>
+                        <tr>
+                            <td>2026-05-11 09:12:00</td>
+                            <td><strong>System</strong></td>
+                            <td><span class="log-badge type-system">Config</span></td>
+                            <td>Platform settings updated: PWA Manifest synchronized.</td>
+                            <td style="font-family:monospace; opacity:0.6;">system</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </div>
-</div>
+</section>
 {% endblock %}

@@ -25,11 +25,16 @@
         </a>
         <ul class="nav-links">
           <li><a href="{{ url_for('dashboard.admin_dashboard') }}" class="{% if request.endpoint == 'dashboard.admin_dashboard' %}active{% endif %}">Dashboard</a></li>
-          <li><a href="{{ url_for('dashboard.admin_dashboard') }}#user-management">Users</a></li>
-          <li><a href="{{ url_for('dashboard.admin_dashboard') }}#system-monitoring">Monitoring</a></li>
-          <li><a href="{{ url_for('dashboard.admin_dashboard') }}#clinical-reports">Reports</a></li>
-          <li><a href="{{ url_for('dashboard.admin_dashboard') }}#recent-activity">Activity</a></li>
-          <li><a href="{{ url_for('staff.audit_logs') }}">Full Logs</a></li>
+          <li><a href="{{ url_for('dashboard.admin_monitoring') }}" class="{% if request.endpoint == 'dashboard.admin_monitoring' %}active{% endif %}">Monitoring</a></li>
+          <li><a href="{{ url_for('dashboard.admin_reports') }}" class="{% if request.endpoint == 'dashboard.admin_reports' %}active{% endif %}">Reports</a></li>
+          <li><a href="{{ url_for('dashboard.admin_activity') }}" class="{% if request.endpoint == 'dashboard.admin_activity' %}active{% endif %}">Activity</a></li>
+          <li><a href="{{ url_for('staff.audit_logs') }}" class="{% if request.endpoint == 'staff.audit_logs' %}active{% endif %}">Full Logs</a></li>
+          
+          {# MOBILE-ONLY AUTH SECTION #}
+          <div class="nav-mobile-auth">
+            <span class="nav-user-name" style="color: var(--blue-dark); padding: 0.75rem 0.9rem; font-weight: 800; border-bottom: 1px solid rgba(26,60,143,0.1);">👑 {{ current_user.first_name }} (Admin)</span>
+            <a href="{{ url_for('auth.logout') }}" class="btn-nav-logout" style="margin: 0.5rem; justify-content: center;">🚪 Logout</a>
+          </div>
         </ul>
         <div class="nav-auth">
           <div class="nav-user-area">
@@ -57,6 +62,6 @@
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     {% block extra_js %}{% endblock %}
-    {% include 'chatbot.html' %}
+
   </body>
 </html>

@@ -16,17 +16,16 @@ def register_security_hooks(app):
             return redirect(request.url.replace('http://', 'https://', 1), code=301)
 
         """
-        Session Hijacking Protection:
-        Locks the session to the user's IP and User-Agent.
-        If a cookie is stolen and replayed from a different device,
-        the mismatch triggers an automatic logout.
+        Session Hijacking Protection (DISABLED FOR MOBILE COMPATIBILITY):
+        Previously locked the session to the user's IP and User-Agent.
+        This was causing frequent logouts on mobile due to UA/IP transitions.
         """
-        if 'user_id' in session:
-            if (session.get('ip') != request.remote_addr or
-                    session.get('user_agent') != request.headers.get('User-Agent')):
-                session.clear()
-                flash('Security Alert: Session terminated due to suspicious activity.', 'error')
-                return redirect(url_for('auth.login'))
+        # if 'user_id' in session:
+        #     if (session.get('ip') != request.remote_addr or
+        #             session.get('user_agent') != request.headers.get('User-Agent')):
+        #         session.clear()
+        #         flash('Security Alert: Session terminated due to suspicious activity.', 'error')
+        #         return redirect(url_for('auth.login'))
 
     @app.after_request
     def add_security_headers(response):

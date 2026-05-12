@@ -1,0 +1,306 @@
+{% extends "base_admin.html" %}
+{% block title %}Appointment Monitoring - VetSync Admin{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --admin-primary: #1a3c8f;
+        --admin-primary-mid: #1e5bbf;
+        --admin-accent: #00c9b1;
+        --admin-bg: #f0f7ff;
+        --admin-surface: rgba(255, 255, 255, 0.9);
+        --admin-border: #d9e6f7;
+        --admin-text: #1a202c;
+        --admin-muted: #8090b0;
+        --admin-shadow: 0 12px 48px rgba(26, 60, 143, 0.12);
+        --admin-radius: 16px;
+    }
+
+    body { background: var(--admin-bg); }
+
+    .admin-shell {
+        min-height: 100vh;
+        padding: 6rem 2rem 4rem;
+        background:
+            radial-gradient(circle at top right, rgba(0, 201, 177, 0.13), transparent 34rem),
+            linear-gradient(180deg, #f8fbff 0%, var(--admin-bg) 100%);
+    }
+
+    .admin-container {
+        max-width: 1280px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .admin-hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 1.5rem;
+        align-items: end;
+        padding: 2.5rem;
+        border-radius: var(--admin-radius);
+        background: linear-gradient(135deg, var(--admin-primary), var(--admin-primary-mid));
+        color: #fff;
+        box-shadow: var(--admin-shadow);
+        overflow: hidden;
+        position: relative;
+    }
+
+    .admin-hero::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background-image: radial-gradient(circle, rgba(255,255,255,0.28) 1px, transparent 1px);
+        background-size: 26px 26px;
+        opacity: 0.14;
+        pointer-events: none;
+    }
+
+    .admin-hero > * { position: relative; z-index: 1; }
+
+    .admin-eyebrow {
+        color: var(--admin-accent);
+        font-size: 0.75rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 0.35rem;
+    }
+
+    .admin-title {
+        font-family: 'Nunito', sans-serif;
+        font-size: clamp(2rem, 4vw, 3rem);
+        line-height: 1.1;
+        font-weight: 900;
+        margin: 0 0 0.55rem;
+    }
+
+    .admin-subtitle {
+        max-width: 680px;
+        color: rgba(255,255,255,0.78);
+        line-height: 1.65;
+    }
+
+    .section-card {
+        padding: 1.5rem;
+        border: 1px solid var(--admin-border);
+        border-radius: var(--admin-radius);
+        background: var(--admin-surface);
+        box-shadow: var(--admin-shadow);
+        backdrop-filter: blur(12px);
+    }
+
+    .section-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.2rem;
+    }
+
+    .section-kicker {
+        color: #007b6b;
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 0.25rem;
+    }
+
+    .admin-section-title {
+        color: var(--admin-primary);
+        font-family: 'Nunito', sans-serif;
+        font-size: 1.35rem;
+        font-weight: 900;
+        margin: 0;
+    }
+
+    .section-desc {
+        color: var(--admin-muted);
+        font-size: 0.9rem;
+        margin-top: 0.25rem;
+        line-height: 1.55;
+    }
+
+    .table-wrap {
+        overflow-x: auto;
+        border: 1px solid #edf3fb;
+        border-radius: 12px;
+        background: #fff;
+    }
+
+    .dash-table {
+        width: 100%;
+        min-width: 760px;
+        border-collapse: collapse;
+    }
+
+    .dash-table th,
+    .dash-table td {
+        padding: 0.9rem 1rem;
+        border-bottom: 1px solid #edf3fb;
+        text-align: left;
+        vertical-align: middle;
+    }
+
+    .dash-table th {
+        background: #f8fbff;
+        color: var(--admin-muted);
+        font-size: 0.72rem;
+        font-weight: 900;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .dash-table td {
+        color: var(--admin-text);
+        font-size: 0.9rem;
+    }
+
+    .status-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.28rem 0.65rem;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    .status-confirmed, .status-active { background: #dcfce7; color: #166534; }
+    .status-pending { background: #fef3c7; color: #92400e; }
+    .status-cancelled { background: #fee2e2; color: #991b1b; }
+
+    .admin-mobile-cards { display: none; flex-direction: column; gap: 1rem; }
+    @media (max-width: 768px) {
+        .admin-mobile-cards { display: flex; }
+        .hide-mobile { display: none !important; }
+        .show-mobile { display: block !important; }
+        .admin-shell { padding: 5.5rem 1rem 3rem; }
+    }
+    .admin-card {
+        background: #fff;
+        border: 1px solid var(--admin-border);
+        border-radius: 12px;
+        padding: 1rem;
+        box-shadow: 0 2px 8px rgba(26, 60, 143, 0.05);
+    }
+</style>
+
+<section class="admin-shell">
+    <div class="admin-container">
+        <header class="admin-hero">
+            <div>
+                <p class="admin-eyebrow">System Oversight</p>
+                <h1 class="admin-title">Appointment Monitoring</h1>
+                <p class="admin-subtitle">Track clinic demand, appointment status, and staff handling in real-time.</p>
+            </div>
+        </header>
+
+        <section class="section-card" id="system-monitoring">
+            <div class="section-header">
+                <div>
+                    <p class="section-kicker">Real-time Data</p>
+                    <h2 class="admin-section-title">Global Appointment Feed</h2>
+                    <p class="section-desc">View all bookings across the platform and monitor staff engagement.</p>
+                </div>
+            </div>
+            <div class="table-wrap hide-mobile">
+                <table class="dash-table">
+                    <thead>
+                        <tr>
+                            <th>Date & Time</th>
+                            <th>Client / Pet</th>
+                            <th>Service</th>
+                            <th>Status</th>
+                            <th>Handled By</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminBookingsTableBody">
+                        <tr><td colspan="5" class="empty-row">Loading appointments...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="admin-mobile-cards show-mobile" id="adminBookingsCardsMobile">
+                <!-- Cards via JS -->
+            </div>
+        </section>
+    </div>
+</section>
+
+<script>
+    function getAuthHeaders() {
+        const token = localStorage.getItem('access_token');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        return { 
+            'Content-Type': 'application/json', 
+            'Authorization': `Bearer ${token}`,
+            'X-CSRF-Token': csrfToken
+        };
+    }
+
+    function escapeHTML(str) {
+        if (!str) return "";
+        return str.replace(/[&<>"']/g, function(m) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+        });
+    }
+
+    async function loadAppointments() {
+        const headers = getAuthHeaders();
+        const body = document.getElementById('adminBookingsTableBody');
+        const cards = document.getElementById('adminBookingsCardsMobile');
+        try {
+            const res = await fetch('/api/v1/appointments/all', { headers });
+            if (!res.ok) throw new Error('Unable to load appointments');
+            const bookings = await res.json();
+            
+            body.innerHTML = bookings.length ? '' : '<tr><td colspan="5" class="empty-row">No appointments found.</td></tr>';
+            cards.innerHTML = '';
+
+            bookings.forEach((b) => {
+                const statusStr = b.status || 'pending';
+                const statusClass = `status-${statusStr.toLowerCase()}`;
+                const dateStr = new Date(b.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+                body.insertAdjacentHTML('beforeend', `
+                    <tr>
+                        <td>
+                            <strong>${escapeHTML(dateStr)}</strong>
+                            <br><small>${escapeHTML(b.slot)}</small>
+                        </td>
+                        <td>
+                            <strong>${escapeHTML(b.pet_name || 'N/A')}</strong>
+                            <br><small>${escapeHTML(b.name || 'Unknown client')}</small>
+                        </td>
+                        <td>${escapeHTML(b.service_name || 'Unknown')}</td>
+                        <td><span class="status-pill ${statusClass}">${escapeHTML(statusStr.toUpperCase())}</span></td>
+                        <td>${escapeHTML(b.handled_by || 'System')}</td>
+                    </tr>
+                `);
+
+                cards.insertAdjacentHTML('beforeend', `
+                    <div class="admin-card" style="margin-bottom:1rem;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                            <strong>${dateStr}</strong>
+                            <span class="status-pill ${statusClass}">${statusStr.toUpperCase()}</span>
+                        </div>
+                        <div style="font-size:0.85rem; color:var(--admin-muted);">
+                            <div>Pet: ${b.pet_name || 'N/A'} (${b.name || 'Unknown'})</div>
+                            <div>Service: ${b.service_name}</div>
+                            <div style="margin-top:4px;">Handled by: ${b.handled_by || 'System'}</div>
+                        </div>
+                    </div>
+                `);
+            });
+        } catch (error) {
+            body.innerHTML = '<tr><td colspan="5" class="empty-row">Unable to load data.</td></tr>';
+        }
+    }
+
+    window.addEventListener('load', loadAppointments);
+</script>
+{% endblock %}

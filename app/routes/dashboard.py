@@ -88,6 +88,30 @@ def admin_dashboard():
                            staff_members=staff_members)
 
 
+@dashboard_bp.route('/admin/monitoring')
+@login_required
+@admin_required
+def admin_monitoring():
+    user = _get_current_user()
+    return render_template('admin_monitoring.html', user=user)
+
+
+@dashboard_bp.route('/admin/reports')
+@login_required
+@admin_required
+def admin_reports():
+    user = _get_current_user()
+    return render_template('admin_reports.html', user=user)
+
+
+@dashboard_bp.route('/admin/activity')
+@login_required
+@admin_required
+def admin_activity():
+    user = _get_current_user()
+    return render_template('admin_activity.html', user=user)
+
+
 @dashboard_bp.route('/staff/dashboard')
 @login_required
 @staff_required
