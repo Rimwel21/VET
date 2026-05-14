@@ -283,34 +283,6 @@
       </div>
     </div>
 
-    <!-- QUICK ACTIONS -->
-    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start;">
-      <div class="dash-card">
-        <h3 style="color: #1a3c8f; font-weight: 800; margin-bottom: 15px; font-size: 1.1rem;">Quick Actions</h3>
-        <div class="dash-actions">
-          <a href="{{ url_for('booking.booking_page') }}">📅 New Booking</a>
-        </div>
-      </div>
-      
-      <!-- CONTACT SUPPORT CARD -->
-      <div class="dash-card">
-        <h3 style="color: #1a3c8f; font-weight: 800; margin-bottom: 15px; font-size: 1.1rem;">✉️ Contact Clinic</h3>
-        <form action="{{ url_for('main.contact') }}" method="POST">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <input type="hidden" name="name" value="{{ user.first_name }} {{ user.last_name }}">
-          <input type="hidden" name="email" value="{{ user.email }}">
-          
-          <div style="margin-bottom: 12px;">
-            <input type="text" name="subject" placeholder="Subject (e.g. Question about Buddy)" required style="width: 100%; padding: 10px; border: 1px solid #dde8ff; border-radius: 8px; font-size: 0.9rem;">
-          </div>
-          <div style="margin-bottom: 12px;">
-            <textarea name="message" placeholder="Your message..." rows="2" required style="width: 100%; padding: 10px; border: 1px solid #dde8ff; border-radius: 8px; font-size: 0.9rem; resize: none;"></textarea>
-          </div>
-          <button type="submit" style="background: #1a3c8f; color: white; border: none; padding: 10px 15px; border-radius: 8px; font-weight: 700; width: 100%; cursor: pointer; font-size: 0.9rem;">Send Message</button>
-        </form>
-      </div>
-    </div>
-
     <!-- APPOINTMENTS CARD -->
     <div class="dash-card">
       <div class="dash-appts-header">

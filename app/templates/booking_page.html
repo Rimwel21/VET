@@ -14,32 +14,22 @@
     background-size:30px 30px;
 }
 .bph-inner {
-    max-width: 1100px; margin: 0 auto;
-    display: grid; grid-template-columns: 1fr auto;
-    align-items: flex-end; gap: 2rem; position: relative; z-index:1;
+    max-width: 900px; margin: 0 auto;
+    display: flex; flex-direction: column;
+    align-items: center; text-align: center; gap: 1rem; position: relative; z-index:1;
 }
 .bph-text h1 {
-    font-family:'Nunito',sans-serif; font-size:2.6rem; font-weight:900;
-    color:#fff; margin-bottom:.75rem; line-height:1.15;
+    font-family:'Nunito',sans-serif; font-size:clamp(2.2rem, 5vw, 3.2rem); font-weight:900;
+    color:#fff; margin-bottom:.5rem; line-height:1.1;
 }
 .bph-text h1 span { color:#00d4f0; }
-.bph-text p { color:rgba(255,255,255,.75); font-size:1rem; max-width:480px; line-height:1.7; }
-.bph-image { width:200px; flex-shrink:0; }
-.bph-image img { width:100%; display:block; filter:drop-shadow(0 8px 24px rgba(0,0,0,.3)); }
+.bph-text p { color:rgba(255,255,255,.85); font-size:1.1rem; max-width:700px; margin: 0 auto; line-height:1.6; }
+.bph-image { display: none; } /* Unified centering */
 
 /* ── PROGRESS ── */
 .progress-bar-wrap {
-    display:flex; align-items:center;
+    display:flex; align-items:center; justify-content: center;
     background:#fff; padding:1.25rem 2rem;
-    border-radius:16px; box-shadow:0 4px 24px rgba(26,60,143,.12);
-    margin-bottom:2rem;
-}
-.progress-step { display:flex; flex-direction:column; align-items:center; gap:.35rem; flex:0 0 auto; }
-.step-circle {
-    width:36px; height:36px; border-radius:50%;
-    background:#e8eef8; color:#8090b0;
-    font-weight:800; font-size:.9rem;
-    display:flex; align-items:center; justify-content:center;
     transition:.3s ease;
 }
 .progress-step > span { font-size:.72rem; font-weight:600; color:#8090b0; white-space:nowrap; }
