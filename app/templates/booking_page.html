@@ -247,16 +247,18 @@
                         <p>Choose your service, date, and preferred time slot.</p>
                     </div>
                 </div>
-                <div class="form-grid-2">
-                    <div class="form-group fg-full">
-                        <label>Service <span class="req">*</span></label>
-                        <select name="service" id="f-service" required>
-                            <option value="">Select a service ▾</option>
-                            {% for svc in services %}
-                            <option value="{{ svc.id }}">{{ svc.icon }} {{ svc.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
+                <div class="form-group fg-full">
+                    <label>Service <span class="req">*</span></label>
+                    <select name="service" id="f-service" required>
+                        <option value="">Select a service ▾</option>
+                        {% for svc in services %}
+                        <option value="{{ svc.id }}"
+                            {% if preselected_service == svc.id %}selected{% endif %}>
+                            {{ svc.icon }} {{ svc.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
                     <div class="form-group">
                         <label>Preferred Date <span class="req">*</span></label>
                         <input type="date" name="date" id="booking-date" required min="{{ today }}">
