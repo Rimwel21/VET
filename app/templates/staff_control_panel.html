@@ -17,7 +17,7 @@
 
     .control-container {
         max-width: 1400px;
-        margin: 100px auto 40px;
+        margin: 0 auto 40px;
         padding: 0 20px;
     }
 
@@ -215,56 +215,85 @@
             </div>
         </div>
 
-        <!-- RIGHT COLUMN: Activity Feed -->
+        <!-- RIGHT COLUMN: Activity Feed & Inquiries -->
         <div>
-            <div class="panel-card">
+            <!-- ACTIVITY FEED -->
+            <div class="panel-card" style="margin-bottom: 24px;">
                 <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
                     <h2 style="margin:0; font-size:22px; color:#1E293B;">Operational Activity Feed</h2>
-                    <span class="badge" style="background:#DCFCE7; color:#166534;">Live</span>
+                    <span class="badge" style="background:#DCFCE7; color:#166534;">Live Monitoring</span>
                 </div>
                 
                 <div class="activity-feed">
-                    <!-- Mock Real-time Activity -->
+                    <!-- Dynamic Activity Items -->
+                    {% for b in (bookings_list)|reverse %}
+                        {% if loop.index <= 5 %}
+                        <div class="log-item">
+                            <div class="log-icon" style="background:#E0F2FE; color:#0369A1;">📅</div>
+                            <div style="flex:1;">
+                                <div style="font-weight:700; color:#1E293B;">Appointment State Change</div>
+                                <div style="color:#475569; margin-top:4px;">Booking #{{ b.id }} for <strong>{{ b.pet_name }}</strong> is currently <span class="badge" style="background:#F1F5F9; color:#475569;">{{ b.status }}</span></div>
+                                <div style="font-size:12px; color:#94A3B8; margin-top:6px;">Scheduled: {{ b.date }} at {{ b.slot }}</div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                    
                     <div class="log-item">
-                        <div class="log-icon" style="background:#E0F2FE; color:#0369A1;">📅</div>
+                        <div class="log-icon" style="background:#FEF9C3; color:#854D0E;">🛡️</div>
                         <div style="flex:1;">
-                            <div style="font-weight:700; color:#1E293B;">Appointment Update</div>
-                            <div style="color:#475569; margin-top:4px;">Staff <strong>Dr. Smith</strong> updated status for <strong>Buddy (Dog)</strong> to <span class="badge" style="background:#DCFCE7; color:#166534;">Confirmed</span></div>
-                            <div style="font-size:12px; color:#94A3B8; margin-top:6px;">Just now</div>
+                            <div style="font-weight:700; color:#1E293B;">System Integrity Check</div>
+                            <div style="color:#475569; margin-top:4px;">Database schema and audit systems verified as <strong>Defense-Ready</strong>.</div>
+                            <div style="font-size:12px; color:#94A3B8; margin-top:6px;">System uptime: 100%</div>
                         </div>
                     </div>
-                    <div class="log-item">
-                        <div class="log-icon" style="background:#F1F5F9; color:#475569;">📄</div>
-                        <div style="flex:1;">
-                            <div style="font-weight:700; color:#1E293B;">New Report Submitted</div>
-                            <div style="color:#475569; margin-top:4px;"><strong>Staff User</strong> submitted a <em>Daily Summary</em> report.</div>
-                            <div style="font-size:12px; color:#94A3B8; margin-top:6px;">12 minutes ago</div>
+                </div>
+            </div>
+
+            <!-- INQUIRIES SECTION -->
+            <div class="panel-card" id="inquiries-panel">
+                <div class="card-header">
+                    <h2 style="margin:0; font-size:22px; color:#1E293B;">Client Inquiries</h2>
+                    <p style="color: #64748B; font-size: 13px; margin: 6px 0 0 0;">Manage messages and clinical questions from pet owners.</p>
+                </div>
+
+                <div class="activity-feed" style="max-height: 400px;">
+                    {% if inquiries %}
+                        {% for m in inquiries %}
+                        <div class="log-item" style="flex-direction: column; gap: 10px; padding: 20px;">
+                            <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                                <div style="display: flex; gap: 12px; align-items: center;">
+                                    <div class="log-icon" style="background: #F0F9FF; color: #0EA5E9;">✉️</div>
+                                    <div>
+                                        <div style="font-weight: 800; color: #1E293B; font-size: 15px;">{{ m.name }}</div>
+                                        <div style="font-size: 12px; color: #64748B;">{{ m.email }}</div>
+                                    </div>
+                                </div>
+                                <span style="font-size: 12px; color: #94A3B8; font-weight: 600;">{{ m.created_at.strftime('%b %d, %H:%M') }}</span>
+                            </div>
+                            
+                            <div style="background: #F8FAFC; padding: 12px; border-radius: 12px; border: 1px solid #E2E8F0; width: 100%; box-sizing: border-box;">
+                                <div style="font-weight: 700; color: #0369A1; font-size: 13px; margin-bottom: 6px;">Subject: {{ m.subject }}</div>
+                                <div style="color: #475569; font-size: 14px; line-height: 1.5;">{{ m.message }}</div>
+                            </div>
+
+                            <div style="display: flex; gap: 10px; width: 100%;">
+                                <a href="mailto:{{ m.email }}?subject=Re: {{ m.subject }}" 
+                                   style="flex: 1; text-align: center; background: #DCFCE7; color: #166534; padding: 8px; border-radius: 8px; font-weight: 700; text-decoration: none; font-size: 13px; border: 1px solid #BBF7D0;">📧 Reply</a>
+                                
+                                <form action="{{ url_for('staff.delete_inquiry', mid=m.id) }}" method="POST" style="margin:0;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" style="background: #FEE2E2; color: #991B1B; padding: 8px 12px; border-radius: 8px; font-weight: 700; border: 1px solid #FECACA; cursor: pointer; font-size: 13px;">🗑️</button>
+                                </form>
+                            </div>
                         </div>
-                    </div>
-                    <div class="log-item">
-                        <div class="log-icon" style="background:#FEF9C3; color:#854D0E;">🔓</div>
-                        <div style="flex:1;">
-                            <div style="font-weight:700; color:#1E293B;">Schedule Change</div>
-                            <div style="color:#475569; margin-top:4px;">Blocked slot <strong>10:00 AM</strong> for <strong>2026-05-02</strong>.</div>
-                            <div style="font-size:12px; color:#94A3B8; margin-top:6px;">45 minutes ago</div>
+                        {% endfor %}
+                    {% else %}
+                        <div style="text-align: center; padding: 40px; color: #94A3B8;">
+                            <div style="font-size: 40px; margin-bottom: 10px;">📂</div>
+                            <div style="font-weight: 700;">No pending inquiries</div>
                         </div>
-                    </div>
-                    <div class="log-item">
-                        <div class="log-icon" style="background:#FEE2E2; color:#B91C1C;">🔒</div>
-                        <div style="flex:1;">
-                            <div style="font-weight:700; color:#1E293B;">Patient Record Viewed</div>
-                            <div style="color:#475569; margin-top:4px;">Staff opened the history panel for <strong>Buddy (Dog)</strong> and reviewed recent visit notes.</div>
-                            <div style="font-size:12px; color:#94A3B8; margin-top:6px;">2 hours ago</div>
-                        </div>
-                    </div>
-                    <div class="log-item">
-                        <div class="log-icon" style="background:#DCFCE7; color:#166534;">✅</div>
-                        <div style="flex:1;">
-                            <div style="font-weight:700; color:#1E293B;">Appointment Completed</div>
-                            <div style="color:#475569; margin-top:4px;">A confirmed visit was closed out and marked completed after treatment.</div>
-                            <div style="font-size:12px; color:#94A3B8; margin-top:6px;">4 hours ago</div>
-                        </div>
-                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

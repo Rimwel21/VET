@@ -3,6 +3,7 @@ import json
 from datetime import datetime
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from app.extensions import db
+from app.models.contact import ContactMessage
 from app.models.booking import Booking
 from app.models.report import Report
 from app.models.availability import DoctorAvailability
@@ -132,7 +133,7 @@ def offers():
 def control_panel():
     user = _get_current_user()
     bookings = Booking.query.order_by(Booking.date.asc(), Booking.slot.asc()).all()
-    bookings_json = [{
+    b_list = [{
         'id': b.id,
         'date': b.date.isoformat(),
         'slot': b.slot,
@@ -143,11 +144,15 @@ def control_panel():
         'status': b.status,
     } for b in bookings]
     clients = User.query.filter_by(role='client').order_by(User.first_name.asc()).all()
+    inquiries = ContactMessage.query.order_by(ContactMessage.created_at.desc()).all()
+    
     return render_template(
         'staff_control_panel.html',
         user=user,
-        bookings_json=json.dumps(bookings_json),
+        bookings_list=b_list,
+        bookings_json=json.dumps(b_list),
         clients=clients,
+        inquiries=inquiries
     )
 
 
@@ -330,3 +335,24 @@ def availability():
 
     db.session.commit()
     return jsonify({'success': True, 'date': target_date, 'slot': slot, 'new_status': status})
+
+
+@staff_bp.route('/inquiries')
+@login_required
+@staff_required
+def inquiries():
+    user = _get_current_user()
+    messages = ContactMessage.query.order_by(ContactMessage.created_at.desc()).all()
+    return render_template('staff_inquiries.html', user=user, messages=messages)
+
+
+@staff_bp.route('/inquiries/delete/<int:mid>', methods=['POST'])
+@login_required
+@staff_required
+def delete_inquiry(mid):
+    msg = db.session.get(ContactMessage, mid)
+    if msg:
+        db.session.delete(msg)
+        db.session.commit()
+        flash('Inquiry removed.', 'success')
+    return redirect(url_for('staff.inquiries'))

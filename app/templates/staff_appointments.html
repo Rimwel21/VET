@@ -5,7 +5,7 @@
 <style>
     .registry-container {
         max-width: 1300px;
-        margin: 110px auto 50px;
+        margin: 0 auto 50px;
         padding: 0 24px;
     }
     .registry-header {
@@ -56,13 +56,20 @@
     .table-card {
         background: white;
         border: 1px solid #E2E8F0;
-        border-radius: 24px;
+        border-radius: 16px;
         overflow: hidden;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
     .registry-table {
         width: 100%;
         border-collapse: collapse;
+        text-align: left;
+        min-width: 1000px; /* Force minimum width to ensure all columns fit */
     }
     .registry-table th, .registry-table td {
         padding: 20px 24px;
@@ -203,21 +210,22 @@
     </div>
 
     <div class="table-card">
-        <table class="registry-table">
-            <thead>
-                <tr>
-                    <th>Date & Time</th>
-                    <th>Patient</th>
-                    <th>Client</th>
-                    <th>Service</th>
-                    <th>Status</th>
-                    {% if current_user.role == 'admin' %}
-                    <th>Handled By</th>
-                    {% else %}
-                    <th>Actions</th>
-                    {% endif %}
-                </tr>
-            </thead>
+        <div class="table-responsive">
+            <table class="registry-table">
+                <thead>
+                    <tr>
+                        <th>Date & Time</th>
+                        <th>Patient</th>
+                        <th>Client</th>
+                        <th>Service</th>
+                        <th>Status</th>
+                        {% if current_user.role == 'admin' %}
+                        <th>Handled By</th>
+                        {% else %}
+                        <th>Actions</th>
+                        {% endif %}
+                    </tr>
+                </thead>
             <tbody>
                 {% for b in bookings %}
                 <tr>
@@ -297,6 +305,7 @@
             </tbody>
         </table>
     </div>
+</div>
 
     <!-- MOBILE REGISTRY CARDS -->
     <div class="registry-cards">

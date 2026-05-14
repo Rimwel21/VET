@@ -1,0 +1,158 @@
+{% extends "base_staff.html" %}
+{% block title %}Client Inquiries - Staff Workspace{% endblock %}
+
+{% block content %}
+<div class="registry-container">
+    <div class="registry-header">
+        <div class="header-left">
+            <h1 class="registry-title">Client Inquiries</h1>
+            <p class="registry-subtitle">Manage messages and clinical questions from pet owners.</p>
+        </div>
+        <div class="registry-stats">
+            <div class="stat-badge">
+                <span class="stat-icon">✉️</span>
+                <span class="stat-value">{{ messages|length }}</span>
+                <span class="stat-label">Total Messages</span>
+            </div>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="desktop-only">
+        <div class="table-card">
+            <table class="registry-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Sender</th>
+                        <th>Subject</th>
+                        <th>Message</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for m in messages %}
+                    <tr>
+                        <td>
+                            <div class="date-cell">
+                                <span class="date-main">{{ m.created_at.strftime('%b %d, %Y') }}</span>
+                                <span class="date-sub">{{ m.created_at.strftime('%I:%M %p') }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="client-cell">
+                                <span class="client-name">{{ m.name }}</span>
+                                <span class="client-email">{{ m.email }}</span>
+                            </div>
+                        </td>
+                        <td><span class="subject-tag">{{ m.subject }}</span></td>
+                        <td style="max-width: 300px;">
+                            <p class="message-preview" title="{{ m.message }}">{{ m.message }}</p>
+                        </td>
+                        <td>
+                            <div class="action-cell">
+                                <a href="mailto:{{ m.email }}?subject=Re: {{ m.subject }}" class="action-btn-reply" title="Reply via Email">📧 Reply</a>
+                                <form action="{{ url_for('staff.delete_inquiry', mid=m.id) }}" method="POST" onsubmit="return confirm('Delete this message permanently?')">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="action-btn-delete" title="Delete Inquiry">🗑️</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Mobile Cards -->
+    <div class="mobile-only">
+        {% for m in messages %}
+        <div class="registry-mobile-card">
+            <div class="card-header">
+                <span class="card-id">#{{ m.id }}</span>
+                <span class="card-date">{{ m.created_at.strftime('%b %d, %Y') }}</span>
+            </div>
+            <div class="card-body">
+                <div class="card-row"><strong>From:</strong> <span>{{ m.name }}</span></div>
+                <div class="card-row"><strong>Email:</strong> <span>{{ m.email }}</span></div>
+                <div class="card-row"><strong>Subject:</strong> <span>{{ m.subject }}</span></div>
+                <div class="card-message">
+                    <strong>Message:</strong>
+                    <p>{{ m.message }}</p>
+                </div>
+            </div>
+            <div class="card-actions">
+                <a href="mailto:{{ m.email }}?subject=Re: {{ m.subject }}" class="action-btn-reply">📧 Reply</a>
+                <form action="{{ url_for('staff.delete_inquiry', mid=m.id) }}" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="action-btn-delete">🗑️ Delete</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">📂</div>
+        <h3>No inquiries found</h3>
+        <p>New messages from the contact forms will appear here.</p>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    /* Styling to match the premium registry look */
+    .subject-tag {
+        background: #f0f7ff;
+        color: #1a3c8f;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        border: 1px solid #dde8ff;
+    }
+    .message-preview {
+        font-size: 0.9rem;
+        color: #475569;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        line-height: 1.5;
+    }
+    .action-btn-reply {
+        background: #ecfdf5;
+        color: #059669;
+        border: 1px solid #d1fae5;
+        padding: 6px 12px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: 700;
+        transition: 0.2s;
+    }
+    .action-btn-reply:hover {
+        background: #059669;
+        color: white;
+    }
+    .action-btn-delete {
+        background: #fef2f2;
+        color: #dc2626;
+        border: 1px solid #fecaca;
+        padding: 6px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .action-btn-delete:hover {
+        background: #dc2626;
+        color: white;
+    }
+    .action-cell {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+</style>
+{% endblock %}
