@@ -19,10 +19,13 @@ def booking_page():
         dest = 'dashboard.admin_dashboard' if user.role == 'admin' else 'dashboard.staff_dashboard'
         return redirect(url_for(dest))
 
-    services = Service.query.all()
-    today    = date.today().isoformat()
+    services   = Service.query.all()
+    today      = date.today().isoformat()
+    service_id = request.args.get('service_id', 0, type=int)  # ← add this
+
     return render_template('booking_page.html', user=user,
-                           services=services, pet_types=PET_TYPES, today=today)
+                           services=services, pet_types=PET_TYPES, today=today,
+                           preselected_service=service_id)
 
 
 @booking_bp.route('/book', methods=['POST'])
