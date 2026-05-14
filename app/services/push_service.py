@@ -44,8 +44,9 @@ def send_push_notification(user_id, title, body, url="/dashboard"):
             success = True
         except WebPushException as ex:
             current_app.logger.error(f"Web push failed: {repr(ex)}")
-            # If subscription is expired/invalid, we could delete it here
-            if ex.response and ex.response.status_code in [404, 410]:
+            # If subscription is expired/invalid (410 Gone or 404 Not Found), delete it
+            status_code = getattr(ex.response, 'status_code', None) if hasattr(ex, 'response') else None
+            if status_code in [404, 410] or "410 Gone" in str(ex) or "404 Not Found" in str(ex):
                 from app.extensions import db
                 db.session.delete(sub)
                 db.session.commit()

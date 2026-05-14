@@ -263,9 +263,8 @@
                                     <input type="hidden" name="status" value="confirmed">
                                     <button type="submit" class="btn-action btn-confirm" title="Accept Appointment" style="font-size:12px; font-weight:700; padding: 8px 15px;">✓ Accept</button>
                                 </form>
-                                <form action="{{ url_for('staff.update_booking_status', bid=b.id) }}" method="POST">
+                                <form action="{{ url_for('staff.cancel_booking', bid=b.id) }}" method="POST">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type="hidden" name="status" value="cancelled">
                                     <button type="submit" class="btn-action btn-cancel" title="Cancel Appointment" style="font-size:12px; font-weight:700; padding: 8px 15px;">✕ Cancel</button>
                                 </form>
                                 {% endif %}
@@ -277,18 +276,19 @@
                                     <input type="hidden" name="status" value="completed">
                                     <button type="submit" class="btn-action btn-finish" title="Finish Visit" style="font-size:12px; font-weight:700; padding: 8px 15px;">🏁 Finish</button>
                                 </form>
-                                <form action="{{ url_for('staff.update_booking_status', bid=b.id) }}" method="POST">
+                                <form action="{{ url_for('staff.cancel_booking', bid=b.id) }}" method="POST">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <input type="hidden" name="status" value="cancelled">
                                     <button type="submit" class="btn-action btn-cancel" title="Cancel Visit" style="font-size:12px; font-weight:700; padding: 8px 15px;">✕ Cancel</button>
                                 </form>
                                 {% endif %}
     
-                                {# CANCEL (Always) #}
-                                <form action="{{ url_for('staff.delete_booking', bid=b.id) }}" method="POST" onsubmit="return confirm('Mark this appointment as cancelled?')">
+                                {# PERMANENT DELETE (Only if cancelled or completed) #}
+                                {% if b.status in ['cancelled', 'completed'] %}
+                                <form action="{{ url_for('staff.delete_booking', bid=b.id) }}" method="POST" onsubmit="return confirm('PERMANENTLY DELETE this record? This cannot be undone.')">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                    <button type="submit" class="btn-action btn-delete" title="Cancel Appointment" style="font-size:18px;">🗑️</button>
+                                    <button type="submit" class="btn-action btn-delete" title="Permanently Delete" style="font-size:18px;">🗑️</button>
                                 </form>
+                                {% endif %}
                             </div>
                             {% endif %}
                         </td>
@@ -340,9 +340,8 @@
                     <input type="hidden" name="status" value="confirmed">
                     <button type="submit" class="btn-action btn-confirm">✓ Accept Appointment</button>
                 </form>
-                <form action="{{ url_for('staff.update_booking_status', bid=b.id) }}" method="POST">
+                <form action="{{ url_for('staff.cancel_booking', bid=b.id) }}" method="POST">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <input type="hidden" name="status" value="cancelled">
                     <button type="submit" class="btn-action btn-cancel">✕ Cancel Appointment</button>
                 </form>
                 {% endif %}
@@ -354,18 +353,19 @@
                     <input type="hidden" name="status" value="completed">
                     <button type="submit" class="btn-action btn-finish">🏁 Finish Visit</button>
                 </form>
-                <form action="{{ url_for('staff.update_booking_status', bid=b.id) }}" method="POST">
+                <form action="{{ url_for('staff.cancel_booking', bid=b.id) }}" method="POST">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <input type="hidden" name="status" value="cancelled">
                     <button type="submit" class="btn-action btn-cancel">✕ Cancel Visit</button>
                 </form>
                 {% endif %}
 
-                {# CANCEL #}
-                <form action="{{ url_for('staff.delete_booking', bid=b.id) }}" method="POST" onsubmit="return confirm('Mark this appointment as cancelled?')">
+                {# PERMANENT DELETE (Only if cancelled or completed) #}
+                {% if b.status in ['cancelled', 'completed'] %}
+                <form action="{{ url_for('staff.delete_booking', bid=b.id) }}" method="POST" onsubmit="return confirm('PERMANENTLY DELETE this record?')">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn-action btn-delete">🗑️ Cancel Appointment</button>
+                    <button type="submit" class="btn-action btn-delete">🗑️ Permanently Delete</button>
                 </form>
+                {% endif %}
             </div>
             {% else %}
             <div class="reg-info-group">

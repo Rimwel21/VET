@@ -716,38 +716,39 @@
                             </span>
                         </td>
                         <td style="display:flex; gap:6px; flex-wrap:wrap; align-items: center;">
-                            {# PENDING ACTIONS #}
-                            {% if b.status == 'pending' %}
-                            <form action="{{ url_for('staff.update_booking_status', bid=b.id) }}" method="POST">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="status" value="confirmed">
-                                <button type="submit" class="action-btn" style="background: #E0F2FE; color: #0369A1; border: 1px solid #BAE6FD;" title="Confirm Appointment">✓ Accept</button>
-                            </form>
-                            {% endif %}
-                            
-                            {# CONFIRMED ACTIONS #}
-                            {% if b.status == 'confirmed' %}
-                            <form action="{{ url_for('staff.update_booking_status', bid=b.id) }}" method="POST">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="status" value="completed">
-                                <button type="submit" class="action-btn" style="background: #DCFCE7; color: #15803D; border: 1px solid #BBF7D0;" title="Mark as Completed">🏁 Finish</button>
-                            </form>
-                            {% endif %}
-
-                            {# CANCEL ACTION (for Pending or Confirmed) #}
-                            {% if b.status == 'pending' or b.status == 'confirmed' %}
-                            <form action="{{ url_for('staff.update_booking_status', bid=b.id) }}" method="POST">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <input type="hidden" name="status" value="cancelled">
-                                <button type="submit" class="action-btn" style="background: #FFF7ED; color: #C2410C; border: 1px solid #FFEDD5;" title="Cancel Appointment">✕ Cancel</button>
-                            </form>
-                            {% endif %}
-                            
-                            {# CANCEL ACTION (Always available) #}
-                            <form action="{{ url_for('staff.delete_booking', bid=b.id) }}" method="POST" onsubmit="return confirm('Mark this appointment as cancelled?')">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="action-btn" style="background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; padding: 6px 8px;" title="Cancel Appointment">🗑️</button>
-                            </form>
+                                {# PENDING #}
+                                {% if b.status == 'pending' %}
+                                <form action="{{ url_for('staff.update_booking_status', bid=b.id) }}" method="POST">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="status" value="confirmed">
+                                    <button type="submit" class="action-btn" style="background: #E0F2FE; color: #0369A1; border: 1px solid #BAE6FD;" title="Confirm Appointment">✓ Accept</button>
+                                </form>
+                                <form action="{{ url_for('staff.cancel_booking', bid=b.id) }}" method="POST">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="action-btn" style="background: #FFF7ED; color: #C2410C; border: 1px solid #FFEDD5;" title="Cancel Appointment">✕ Cancel</button>
+                                </form>
+                                {% endif %}
+                                
+                                {# CONFIRMED #}
+                                {% if b.status == 'confirmed' %}
+                                <form action="{{ url_for('staff.update_booking_status', bid=b.id) }}" method="POST">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <input type="hidden" name="status" value="completed">
+                                    <button type="submit" class="action-btn" style="background: #DCFCE7; color: #15803D; border: 1px solid #BBF7D0;" title="Mark as Completed">🏁 Finish</button>
+                                </form>
+                                <form action="{{ url_for('staff.cancel_booking', bid=b.id) }}" method="POST">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="action-btn" style="background: #FFF7ED; color: #C2410C; border: 1px solid #FFEDD5;" title="Cancel Appointment">✕ Cancel</button>
+                                </form>
+                                {% endif %}
+                                
+                                {# PERMANENT DELETE (Only if cancelled or completed) #}
+                                {% if b.status in ['cancelled', 'completed'] %}
+                                <form action="{{ url_for('staff.delete_booking', bid=b.id) }}" method="POST" onsubmit="return confirm('PERMANENTLY DELETE this record?')">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    <button type="submit" class="action-btn" style="background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; padding: 6px 8px;" title="Permanently Delete">🗑️</button>
+                                </form>
+                                {% endif %}
                         </td>
                     </tr>
                     {% endfor %}
@@ -810,18 +811,19 @@
 
                         {# CANCEL ACTION #}
                         {% if b.status == 'pending' or b.status == 'confirmed' %}
-                        <form action="{{ url_for('staff.update_booking_status', bid=b.id) }}" method="POST">
+                        <form action="{{ url_for('staff.cancel_booking', bid=b.id) }}" method="POST">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="status" value="cancelled">
                             <button type="submit" class="action-btn action-cancel">✕ Cancel</button>
                         </form>
                         {% endif %}
                         
-                        {# CANCEL ACTION #}
-                        <form action="{{ url_for('staff.delete_booking', bid=b.id) }}" method="POST" onsubmit="return confirm('Mark this appointment as cancelled?')">
+                        {# PERMANENT DELETE ACTION #}
+                        {% if b.status in ['cancelled', 'completed'] %}
+                        <form action="{{ url_for('staff.delete_booking', bid=b.id) }}" method="POST" onsubmit="return confirm('PERMANENTLY DELETE this record?')">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="action-btn action-delete">🗑️ Cancel</button>
+                            <button type="submit" class="action-btn action-delete">🗑️ Permanently Delete</button>
                         </form>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -973,15 +975,19 @@
                         <div class="appt-actions">
                             ${a.status === 'pending' ? `
                                 <button class="action-btn" style="background:#E0F2FE; color:#0369A1; border:1px solid #BAE6FD;" onclick="updateApptStatus(${a.id}, 'confirmed', '${escapeHTML(dateStr)}')">✓ Accept</button>
-                                <button class="action-btn" style="background:#FFF7ED; color:#C2410C; border:1px solid #FFEDD5;" onclick="updateApptStatus(${a.id}, 'cancelled', '${escapeHTML(dateStr)}')">✕ Cancel</button>
                             ` : ''}
 
                             ${a.status === 'confirmed' ? `
                                 <button class="action-btn" style="background:#DCFCE7; color:#15803D; border:1px solid #BBF7D0;" onclick="updateApptStatus(${a.id}, 'completed', '${escapeHTML(dateStr)}')">🏁 Finish</button>
-                                <button class="action-btn" style="background:#FFF7ED; color:#C2410C; border:1px solid #FFEDD5;" onclick="updateApptStatus(${a.id}, 'cancelled', '${escapeHTML(dateStr)}')">✕ Cancel</button>
                             ` : ''}
 
-                            <button class="action-btn" style="background:#FEF2F2; color:#B91C1C; border:1px solid #FECACA; padding: 6px 12px;" onclick="deleteApptFromCalendar(${a.id}, '${escapeHTML(dateStr)}')" title="Cancel Appointment">🗑️</button>
+                            ${a.status === 'pending' || a.status === 'confirmed' ? `
+                                <button class="action-btn" style="background:#FFF7ED; color:#C2410C; border:1px solid #FFEDD5;" onclick="cancelApptFromCalendar(${a.id}, '${escapeHTML(dateStr)}')">✕ Cancel</button>
+                            ` : ''}
+
+                            ${a.status === 'cancelled' || a.status === 'completed' ? `
+                                <button class="action-btn" style="background:#FEF2F2; color:#B91C1C; border:1px solid #FECACA; padding: 6px 12px;" onclick="deleteApptFromCalendar(${a.id}, '${escapeHTML(dateStr)}')" title="Permanently Delete">🗑️</button>
+                            ` : ''}
                         </div>
                     </div>
                 `;
@@ -1018,8 +1024,27 @@
         } catch (e) { alert("Connection Error."); }
     }
 
-    async function deleteApptFromCalendar(id, currentDateStr) {
+    async function cancelApptFromCalendar(id, currentDateStr) {
         if(!confirm("Mark this appointment as cancelled?")) return;
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+            const formData = new FormData();
+            formData.append('csrf_token', csrfToken);
+            const res = await fetch(`/staff/booking/${id}/cancel`, { method: 'POST', body: formData });
+            if(res.ok) {
+                const app = rawBookings.find(b => b.id === id);
+                if(app) app.status = 'cancelled';
+                renderCalendar();
+                openDayDetail(currentDateStr);
+                setTimeout(() => { location.reload(); }, 800);
+            } else {
+                alert("Cancellation failed.");
+            }
+        } catch (e) { alert("Network error."); }
+    }
+
+    async function deleteApptFromCalendar(id, currentDateStr) {
+        if(!confirm("PERMANENTLY DELETE this record? This cannot be undone.")) return;
         
         try {
             const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
@@ -1027,9 +1052,15 @@
             formData.append('csrf_token', csrfToken);
             const res = await fetch(`/staff/booking/${id}/delete`, { method: 'POST', body: formData });
             if(res.ok) {
-                const app = rawBookings.find(b => b.id === id);
-                if(app) app.status = 'cancelled';
+                // Remove from local cache
+                const idx = rawBookings.findIndex(b => b.id === id);
+                if (idx !== -1) rawBookings.splice(idx, 1);
                 
+                // Also update the grouped lookup
+                if (bookingsByDate[currentDateStr]) {
+                    bookingsByDate[currentDateStr] = bookingsByDate[currentDateStr].filter(b => b.id !== id);
+                }
+
                 renderCalendar();
                 openDayDetail(currentDateStr);
                 setTimeout(() => { location.reload(); }, 800);

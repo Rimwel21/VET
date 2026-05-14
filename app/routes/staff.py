@@ -256,10 +256,10 @@ def update_booking_status(bid):
     return redirect(request.referrer or url_for('dashboard.staff_dashboard'))
 
 
-@staff_bp.route('/booking/<int:bid>/delete', methods=['POST'])
+@staff_bp.route('/booking/<int:bid>/cancel', methods=['POST'])
 @login_required
 @staff_required
-def delete_booking(bid):
+def cancel_booking(bid):
     booking = db.session.get(Booking, bid)
     if not booking:
         flash('Booking not found.', 'error')
@@ -277,6 +277,26 @@ def delete_booking(bid):
         db.session.commit()
         flash(f'Booking #{bid} has been marked as cancelled.', 'success')
 
+    return redirect(request.referrer or url_for('dashboard.staff_dashboard'))
+
+
+@staff_bp.route('/booking/<int:bid>/delete', methods=['POST'])
+@login_required
+@staff_required
+def delete_booking(bid):
+    booking = db.session.get(Booking, bid)
+    if not booking:
+        flash('Booking not found.', 'error')
+        return redirect(request.referrer or url_for('dashboard.staff_dashboard'))
+    
+    # Allow deletion only if cancelled or completed to prevent accidental removal of active appointments
+    if booking.status not in ['cancelled', 'completed']:
+        flash('Only cancelled or completed appointments can be permanently deleted.', 'error')
+        return redirect(request.referrer or url_for('dashboard.staff_dashboard'))
+
+    db.session.delete(booking)
+    db.session.commit()
+    flash(f'Booking #{bid} has been permanently removed.', 'success')
     return redirect(request.referrer or url_for('dashboard.staff_dashboard'))
 
 
