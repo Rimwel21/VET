@@ -1,4 +1,4 @@
-from flask import session
+from flask import session # type: ignore
 from app.extensions import db, mail, migrate
 from app.middleware.security import register_security_hooks
 from app.routes import register_blueprints
@@ -7,7 +7,7 @@ from config import config
 
 
 def create_app(config_name='default'):
-    from flask import Flask
+    from flask import Flask # type: ignore
     app = Flask(__name__, template_folder='templates')
     app.config.from_object(config[config_name])
 
@@ -45,20 +45,23 @@ def create_app(config_name='default'):
 
 def _run_migrations():
     """Applies simple schema migrations that may be missing in older DBs."""
+    # pyrefly: ignore [missing-import]
     from sqlalchemy import text
     
     # List of migrations to try
     migrations = [
         "ALTER TABLE bookings ADD COLUMN handled_by VARCHAR(100)",
         "ALTER TABLE otp_verifications ADD COLUMN reset_token VARCHAR(255)",
-        "ALTER TABLE otp_verifications ADD COLUMN token_expires_at DATETIME"
+        "ALTER TABLE otp_verifications ADD COLUMN token_expires_at DATETIME",
+        "CREATE TABLE IF NOT EXISTS audit_logs (id SERIAL PRIMARY KEY, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, user_id INTEGER REFERENCES users(id), user_name VARCHAR(100), action_type VARCHAR(50), description TEXT, ip_address VARCHAR(45))"
     ]
     
     for m in migrations:
         try:
             db.session.execute(text(m))
             db.session.commit()
-        except Exception:
+        except Exception as e:
+            print(f"Migration error ({m}): {e}")
             db.session.rollback()
 
 

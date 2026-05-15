@@ -1,196 +1,298 @@
 {% extends "base_admin.html" %}
-{% block title %}System Audit Logs - VetSync Admin{% endblock %}
+{% block title %}Audit Trail - VetSync Admin{% endblock %}
 
 {% block content %}
 <style>
     :root {
         --admin-primary: #1a3c8f;
-        --admin-primary-mid: #1e5bbf;
         --admin-accent: #00c9b1;
-        --admin-bg: #f0f7ff;
-        --admin-surface: rgba(255, 255, 255, 0.9);
-        --admin-border: #d9e6f7;
-        --admin-text: #1a202c;
-        --admin-muted: #8090b0;
-        --admin-shadow: 0 12px 48px rgba(26, 60, 143, 0.12);
+        --admin-bg: #f8fbff;
+        --admin-surface: #ffffff;
+        --admin-border: #e2e8f0;
+        --admin-text: #1e293b;
+        --admin-muted: #64748b;
         --admin-radius: 16px;
     }
 
-    body { background: var(--admin-bg); }
+    body { background: var(--admin-bg); overflow: hidden; }
 
     .admin-shell {
-        min-height: 100vh;
-        padding: 6rem 2rem 4rem;
-        background: radial-gradient(circle at top right, rgba(0, 201, 177, 0.13), transparent 34rem), linear-gradient(180deg, #f8fbff 0%, var(--admin-bg) 100%);
-    }
-
-    .admin-container {
-        max-width: 1280px;
-        margin: 0 auto;
+        height: calc(100vh - 60px); /* Subtract 60px top-header */
+        padding: 1rem 1.5rem;
         display: flex;
         flex-direction: column;
-        gap: 1.5rem;
+        gap: 1rem;
+        box-sizing: border-box;
     }
 
+    /* Override base_admin #main-content padding for full-view */
+    #main-content {
+        padding: 0 !important;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .main-layout { overflow: hidden !important; }
+
+    .admin-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 1.25rem;
+        max-width: 1400px;
+        margin: 0 auto;
+        width: 100%;
+        overflow: hidden;
+    }
+
+    /* ── Compact Hero ── */
     .admin-hero {
-        padding: 2.5rem;
+        padding: 1.5rem 2rem;
         border-radius: var(--admin-radius);
-        background: linear-gradient(135deg, var(--admin-primary), var(--admin-primary-mid));
+        background: linear-gradient(135deg, #1a3c8f, #1e5bbf);
         color: #fff;
-        box-shadow: var(--admin-shadow);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 10px 25px rgba(26, 60, 143, 0.15);
         position: relative;
         overflow: hidden;
+        flex-shrink: 0;
     }
 
     .admin-hero::after {
         content: ""; position: absolute; inset: 0;
-        background-image: radial-gradient(circle, rgba(255,255,255,0.28) 1px, transparent 1px);
-        background-size: 26px 26px; opacity: 0.14;
+        background: radial-gradient(circle at top right, rgba(0, 201, 177, 0.2), transparent 70%);
+        pointer-events: none;
     }
 
-    .admin-hero > * { position: relative; z-index: 1; }
+    .hero-content h1 { font-size: 1.75rem; font-weight: 900; margin: 0 0 4px; letter-spacing: -0.02em; }
+    .hero-content p { font-size: 0.9rem; color: rgba(255,255,255,0.8); margin: 0; }
 
-    .admin-eyebrow { color: var(--admin-accent); font-size: 0.75rem; font-weight: 800; text-transform: uppercase; margin-bottom: 0.35rem; }
-    .admin-title { font-family: 'Nunito', sans-serif; font-size: clamp(2rem, 4vw, 3rem); font-weight: 900; margin: 0 0 0.55rem; }
-    .admin-subtitle { max-width: 680px; color: rgba(255,255,255,0.78); line-height: 1.65; }
+    /* ── Action Bar ── */
+    .refresh-btn {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 0.6rem 1.25rem;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        transition: all 0.2s ease;
+        z-index: 2;
+    }
+    .refresh-btn:hover { background: rgba(255, 255, 255, 0.25); transform: translateY(-2px); }
+    .refresh-btn:active { transform: translateY(0); }
+    .refresh-btn:disabled { opacity: 0.6; cursor: wait; }
 
+    /* ── Table Card ── */
     .section-card {
-        padding: 1.5rem;
+        flex: 1;
+        background: var(--admin-surface);
         border: 1px solid var(--admin-border);
         border-radius: var(--admin-radius);
-        background: var(--admin-surface);
-        box-shadow: var(--admin-shadow);
-        backdrop-filter: blur(12px);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
     }
 
+    .table-header-info {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--admin-border);
+        background: #fcfdfe;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .table-header-info h2 { font-size: 0.95rem; font-weight: 800; color: var(--admin-primary); margin: 0; }
+
     .table-wrap {
+        flex: 1;
+        overflow-y: auto;
         overflow-x: auto;
-        border-radius: 12px;
-        border: 1px solid #edf3fb;
-        background: white;
     }
 
     .dash-table {
         width: 100%;
-        min-width: 900px;
         border-collapse: collapse;
-    }
-
-    .dash-table th, .dash-table td {
-        padding: 1rem;
-        text-align: left;
-        border-bottom: 1px solid #edf3fb;
+        table-layout: fixed;
     }
 
     .dash-table th {
-        background: #f8fbff;
-        color: var(--admin-muted);
+        position: sticky;
+        top: 0;
+        background: #f8fafc;
+        z-index: 10;
+        padding: 1rem 1.5rem;
+        text-align: left;
         font-size: 0.72rem;
         font-weight: 900;
         text-transform: uppercase;
+        color: var(--admin-muted);
         letter-spacing: 0.05em;
+        border-bottom: 2px solid var(--admin-border);
     }
 
-    .dash-table td { font-size: 0.9rem; color: var(--admin-text); }
+    .dash-table td {
+        padding: 1rem 1.5rem;
+        font-size: 0.88rem;
+        color: var(--admin-text);
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+        word-wrap: break-word;
+    }
+
+    .dash-table tr:hover { background: #f8fafc; }
+
+    /* Column Widths */
+    .col-time { width: 180px; }
+    .col-user { width: 160px; }
+    .col-type { width: 140px; }
+    .col-ip { width: 130px; }
+    /* Description takes remaining space */
 
     .log-badge {
-        font-size: 0.65rem;
-        font-weight: 900;
-        padding: 0.25rem 0.6rem;
-        border-radius: 999px;
-        text-transform: uppercase;
-    }
-
-    .type-security { background: #fee2e2; color: #991b1b; }
-    .type-staff { background: #e0f2fe; color: #0369a1; }
-    .type-system { background: #f1f5f9; color: #475569; }
-
-    .btn {
-        padding: 0.6rem 1.25rem;
-        border-radius: 999px;
+        font-size: 0.68rem;
         font-weight: 800;
-        font-size: 0.85rem;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        border: 1.5px solid var(--admin-border);
-        background: #fff;
+        padding: 0.3rem 0.7rem;
+        border-radius: 6px;
+        display: inline-block;
+        white-space: nowrap;
     }
-    .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-    .btn.primary { background: var(--admin-primary); color: white; border-color: var(--admin-primary); }
+    .type-security, .type-Auth-Success, .type-User-Created { background: #fee2e2; color: #991b1b; }
+    .type-staff, .type-Booking-Update, .type-Status-Change { background: #e0f2fe; color: #0369a1; }
+    .type-system, .type-Backup, .type-Config, .type-Logout { background: #f1f5f9; color: #475569; }
+
+    .spinning { animation: spin 0.8s linear infinite; }
+    @keyframes spin { 100% { transform: rotate(-360deg); } }
+
+    /* ── Responsiveness ── */
+    @media (max-width: 1024px) {
+        .col-ip { display: none; }
+        .col-time { width: 150px; }
+    }
 
     @media (max-width: 768px) {
-        .admin-shell { padding: 5.5rem 1rem 3rem; }
-        .admin-hero { padding: 1.5rem; }
+        .admin-shell { padding: 1rem; height: auto; overflow: auto; }
+        .admin-container { height: auto; overflow: visible; }
+        .section-card { height: 600px; }
+        .admin-hero { flex-direction: column; text-align: center; gap: 1rem; }
+        .col-type { display: none; }
+        .dash-table { min-width: 500px; table-layout: auto; }
     }
 </style>
 
 <section class="admin-shell">
     <div class="admin-container">
+        <!-- Hero Header -->
         <header class="admin-hero">
-            <div style="display:flex; justify-content:space-between; align-items:flex-end; width:100%; flex-wrap:wrap; gap:1.5rem;">
-                <div>
-                    <p class="admin-eyebrow">Audit Trail</p>
-                    <h1 class="admin-title">System Audit Logs</h1>
-                    <p class="admin-subtitle">Historical record of all system activity, staff actions, and security events across the ecosystem.</p>
-                </div>
-                <div style="display:flex; gap:0.75rem;">
-                    <button class="btn primary">🔄 Refresh Feed</button>
-                </div>
+            <div class="hero-content">
+                <p style="font-size: 0.65rem; font-weight: 800; color: var(--admin-accent); text-transform: uppercase; margin-bottom: 4px;">Security Dashboard</p>
+                <h1>Audit Trail</h1>
+                <p>System activity and security events historical record.</p>
             </div>
+            <button id="refreshBtn" class="refresh-btn" onclick="refreshAuditLogs()">
+                <span id="refreshIcon">🔄</span> Refresh Feed
+            </button>
         </header>
 
+        <!-- Main Content Table -->
         <section class="section-card">
+            <div class="table-header-info">
+                <h2>📑 Activity Logs</h2>
+                <div id="logCount" style="font-size: 0.75rem; color: var(--admin-muted); font-weight: 600;">
+                    Showing last 50 entries
+                </div>
+            </div>
+            
             <div class="table-wrap">
                 <table class="dash-table">
                     <thead>
                         <tr>
-                            <th>Timestamp</th>
-                            <th>User</th>
-                            <th>Action Type</th>
+                            <th class="col-time">Timestamp</th>
+                            <th class="col-user">User</th>
+                            <th class="col-type">Action Type</th>
                             <th>Description</th>
-                            <th>IP Address</th>
+                            <th class="col-ip">IP Address</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr>
-                            <td>2026-05-12 14:22:10</td>
-                            <td><strong>admin_main</strong></td>
-                            <td><span class="log-badge type-security">Auth Success</span></td>
-                            <td>Secure login established via primary admin console.</td>
-                            <td style="font-family:monospace; opacity:0.6;">192.168.1.45</td>
-                        </tr>
-                        <tr>
-                            <td>2026-05-12 13:45:05</td>
-                            <td><strong>Dr. Smith</strong></td>
-                            <td><span class="log-badge type-staff">Booking Update</span></td>
-                            <td>Changed status of Booking #1042 to <em>Completed</em>.</td>
-                            <td style="font-family:monospace; opacity:0.6;">10.0.0.12</td>
-                        </tr>
-                        <tr>
-                            <td>2026-05-12 12:00:00</td>
-                            <td><strong>System</strong></td>
-                            <td><span class="log-badge type-system">Backup</span></td>
-                            <td>Cloud database backup completed successfully.</td>
-                            <td style="font-family:monospace; opacity:0.6;">internal</td>
-                        </tr>
-                        <tr>
-                            <td>2026-05-11 10:05:32</td>
-                            <td><strong>Admin Jane</strong></td>
-                            <td><span class="log-badge type-security">User Created</span></td>
-                            <td>New staff account provisioned for Vet Assistant Team.</td>
-                            <td style="font-family:monospace; opacity:0.6;">192.168.1.10</td>
-                        </tr>
-                        <tr>
-                            <td>2026-05-11 09:12:00</td>
-                            <td><strong>System</strong></td>
-                            <td><span class="log-badge type-system">Config</span></td>
-                            <td>Platform settings updated: PWA Manifest synchronized.</td>
-                            <td style="font-family:monospace; opacity:0.6;">system</td>
-                        </tr>
+                    <tbody id="logsTableBody">
+                        {% if logs %}
+                            {% for log in logs %}
+                            <tr>
+                                <td class="col-time" style="color:var(--admin-muted); font-size:0.8rem;">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                <td class="col-user"><strong>{{ log.user_name or 'System' }}</strong></td>
+                                <td class="col-type"><span class="log-badge type-{{ log.action_type.replace(' ', '-') }}">{{ log.action_type }}</span></td>
+                                <td>{{ log.description }}</td>
+                                <td class="col-ip" style="font-family:monospace; opacity:0.6; font-size:0.75rem;">{{ log.ip_address or 'internal' }}</td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr id="emptyRow">
+                                <td colspan="5" style="text-align:center; padding: 5rem 0; color: var(--admin-muted);">
+                                    <div style="font-size: 2rem; margin-bottom: 1rem;">🔎</div>
+                                    No logs found. System activity will appear here.
+                                </td>
+                            </tr>
+                        {% endif %}
                     </tbody>
                 </table>
             </div>
         </section>
     </div>
 </section>
+
+<script>
+async function refreshAuditLogs() {
+    const btn = document.getElementById('refreshBtn');
+    const icon = document.getElementById('refreshIcon');
+    const tableBody = document.getElementById('logsTableBody');
+    
+    btn.disabled = true;
+    icon.classList.add('spinning');
+    
+    try {
+        const response = await fetch('/staff/api/audit-logs/data');
+        const data = await response.json();
+        
+        if (data.success) {
+            if (data.logs.length === 0) {
+                tableBody.innerHTML = `
+                    <tr id="emptyRow">
+                        <td colspan="5" style="text-align:center; padding: 5rem 0; color: var(--admin-muted);">
+                            <div style="font-size: 2rem; margin-bottom: 1rem;">🔎</div>
+                            No logs found. System activity will appear here.
+                        </td>
+                    </tr>`;
+            } else {
+                tableBody.innerHTML = data.logs.map(log => `
+                    <tr>
+                        <td class="col-time" style="color:var(--admin-muted); font-size:0.8rem;">${log.timestamp}</td>
+                        <td class="col-user"><strong>${log.user}</strong></td>
+                        <td class="col-type"><span class="log-badge type-${log.action_type.replace(/ /g, '-')}">${log.action_type}</span></td>
+                        <td>${log.description}</td>
+                        <td class="col-ip" style="font-family:monospace; opacity:0.6; font-size:0.75rem;">${log.ip_address}</td>
+                    </tr>
+                `).join('');
+                document.getElementById('logCount').textContent = `Showing last ${data.logs.length} entries`;
+            }
+        }
+    } catch (error) {
+        console.error('Fetch error:', error);
+    } finally {
+        setTimeout(() => {
+            btn.disabled = false;
+            icon.classList.remove('spinning');
+        }, 600);
+    }
+}
+</script>
 {% endblock %}

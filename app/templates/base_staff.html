@@ -57,10 +57,41 @@
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         display: flex;
         align-items: center;
+        justify-content: space-between;
+      }
+
+      .sidebar-brand-link {
+        display: flex;
+        align-items: center;
         gap: 12px;
         text-decoration: none;
         color: white;
       }
+
+      .mobile-sidebar-close {
+        display: none;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255,255,255,0.12);
+        backdrop-filter: blur(6px);
+        border: 1.5px solid rgba(255,255,255,0.25);
+        color: white;
+        border-radius: 10px;
+        padding: 6px 12px;
+        cursor: pointer;
+        font-size: 0.8rem;
+        font-weight: 700;
+        font-family: 'Nunito', sans-serif;
+        letter-spacing: 0.3px;
+        transition: background 0.2s, transform 0.15s;
+        flex-shrink: 0;
+        white-space: nowrap;
+      }
+      .mobile-sidebar-close:hover {
+        background: rgba(255,255,255,0.2);
+        transform: translateX(-2px);
+      }
+      .mobile-sidebar-close:active { transform: scale(0.96); }
 
       .sidebar-nav-list {
         flex: 1;
@@ -189,6 +220,7 @@
           justify-content: space-between; /* Hamburger left, User right */
         }
         .mobile-menu-trigger { display: block; }
+        .mobile-sidebar-close { display: flex; }
         .staff-main { width: 100%; margin-left: 0; }
         .staff-content-scroll { padding: 20px 16px; height: auto; overflow: visible; }
       }
@@ -212,10 +244,15 @@
     <div class="staff-app-shell">
       <!-- SIDEBAR -->
       <aside class="staff-sidebar" id="sidebar">
-        <a class="sidebar-brand" href="{{ url_for('dashboard.staff_dashboard') }}">
-          <span style="font-size: 24px;">🩺</span>
-          <span style="font-size: 1.25rem; font-weight: 900;">VetSync Staff</span>
-        </a>
+        <div class="sidebar-brand">
+          <a class="sidebar-brand-link" href="{{ url_for('dashboard.staff_dashboard') }}">
+            <span style="font-size: 24px;">🩺</span>
+            <span style="font-size: 1.25rem; font-weight: 900;">VetSync Staff</span>
+          </a>
+          <button class="mobile-sidebar-close" onclick="toggleStaffSidebar()" aria-label="Close sidebar">
+            ✕ Close
+          </button>
+        </div>
         
         <ul class="sidebar-nav-list">
           <li class="nav-item">

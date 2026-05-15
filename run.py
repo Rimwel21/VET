@@ -34,6 +34,19 @@ with app.app_context():
         db.session.execute(text("ALTER TABLE reports ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP;"))
         db.session.execute(text("ALTER TABLE reports ADD COLUMN IF NOT EXISTS edit_history JSON DEFAULT '[]'::json;"))
         
+        # Ensure audit_logs table exists
+        db.session.execute(text("""
+            CREATE TABLE IF NOT EXISTS audit_logs (
+                id SERIAL PRIMARY KEY,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                user_id INTEGER REFERENCES users(id),
+                user_name VARCHAR(100),
+                action_type VARCHAR(50),
+                description TEXT,
+                ip_address VARCHAR(45)
+            );
+        """))
+        
         db.session.commit()
         print("Database schema successfully verified/updated (including contact_messages).")
     except Exception as e:

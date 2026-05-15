@@ -6,6 +6,7 @@ from app.models.availability import DoctorAvailability
 from app.models.contact import ContactMessage
 from app.models.report import Report
 from app.models.otp_verification import OtpVerification
+from app.models.audit_log import AuditLog
 
 __all__ = [
     'User',
@@ -17,4 +18,5 @@ __all__ = [
     'ContactMessage',
     'Report',
     'OtpVerification',
+    'AuditLog',
 ]

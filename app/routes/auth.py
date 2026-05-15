@@ -6,6 +6,7 @@ from app.middleware.decorators import _get_current_user
 from app.services.auth_service import create_jwt_token
 from app.services.rate_limiter import clear_attempts, is_limited, record_failure
 from app.utils.sanitize import clean_input
+from app.utils.logger import log_action
 
 auth_bp = Blueprint('auth', __name__)
 EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
@@ -63,6 +64,8 @@ def signup():
         db.session.add(user)
         db.session.commit()
 
+        log_action('User Created', f'New account registered for {fn} {ln} ({em})', user=user)
+
         flash('Account created successfully! Please log in.', 'success')
         return redirect(url_for('auth.login'))
 
@@ -104,6 +107,7 @@ def login():
             session['user_agent']= request.headers.get('User-Agent')
             session.permanent    = True
             clear_attempts(rate_key)
+            log_action('Auth Success', f'Secure login established for {user.role}: {user.first_name} {user.last_name}', user=user)
 
             access_token = create_jwt_token(user.id, user.role)
 
@@ -145,6 +149,9 @@ def forgot_password():
 
 @auth_bp.route('/logout')
 def logout():
+    user = _get_current_user()
+    if user:
+        log_action('Logout', f'User session terminated: {user.first_name} {user.last_name}', user=user)
     session.clear()
     flash('Logged out successfully.', 'success')
     return redirect(url_for('main.index'))

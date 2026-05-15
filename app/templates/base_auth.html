@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" style="height:100%; overflow:hidden;">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -10,24 +10,54 @@
       href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='2.9') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css', v='3.0') }}" />
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}" />
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/pwa-icon-192.png') }}" />
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/pwa-icon-180.png') }}" />
+    <style>
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+      /* Auth wrapper fills remaining height under navbar */
+      #main-content {
+        height: calc(100vh - 72px);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+      #main-content > section.auth-section {
+        flex: 1;
+      }
+      /* Signup page needs scroll on very small phones */
+      @media (max-width: 900px) {
+        html, body { overflow: auto; }
+        #main-content { height: auto; overflow: visible; }
+        #main-content > section.auth-section {
+          height: auto;
+          min-height: calc(100vh - 72px);
+        }
+        /* signup card allows scroll if truly too tall */
+        .signup-card { overflow-y: auto; max-height: calc(100vh - 72px); }
+      }
+    </style>
     {% block extra_css %}{% endblock %}
   </head>
   <body>
     <div class="blur-overlay" id="blurOverlay"></div>
 
     {# AUTH NAVIGATION #}
-    <nav class="navbar" id="navbar">
+    <nav class="navbar" id="navbar" style="background: var(--blue-dark, #1a3c8f); border-bottom: 1px solid rgba(255,255,255,0.1);">
       <div class="nav-container" style="justify-content: space-between;">
         <a href="{{ url_for('main.index') }}" class="nav-logo">
-          <span class="logo-icon">🐾</span> <span class="logo-text">VetSync</span>
+          <span class="logo-icon">🐾</span> <span class="logo-text" style="color:white;">VetSync</span>
         </a>
-        <a href="{{ url_for('main.index') }}" class="btn-back-home">
-          <span class="arrow">&larr;</span> <span>Back to Home</span>
+        <a href="{{ url_for('main.index') }}" class="btn-back-home" aria-label="Back to Home">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+          <span>Home</span>
         </a>
       </div>
     </nav>

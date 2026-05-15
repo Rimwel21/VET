@@ -51,6 +51,9 @@
       .sidebar-header {
         padding: 24px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
       }
 
       .sidebar-logo {
@@ -63,6 +66,31 @@
         font-weight: 900;
         font-size: 1.25rem;
       }
+
+      .mobile-sidebar-close {
+        display: none;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255,255,255,0.12);
+        backdrop-filter: blur(6px);
+        border: 1.5px solid rgba(255,255,255,0.25);
+        color: white;
+        border-radius: 10px;
+        padding: 6px 12px;
+        cursor: pointer;
+        font-size: 0.8rem;
+        font-weight: 700;
+        font-family: 'Nunito', sans-serif;
+        letter-spacing: 0.3px;
+        transition: background 0.2s, transform 0.15s;
+        flex-shrink: 0;
+        white-space: nowrap;
+      }
+      .mobile-sidebar-close:hover {
+        background: rgba(255,255,255,0.2);
+        transform: translateX(-2px);
+      }
+      .mobile-sidebar-close:active { transform: scale(0.96); }
 
       .sidebar-nav {
         flex: 1;
@@ -168,23 +196,31 @@
       }
 
       @media (max-width: 1024px) {
-        .sidebar { position: fixed; height: 100vh; transform: translateX(-100%); }
+        .sidebar { position: fixed; height: 100vh; transform: translateX(-100%); z-index: 1001; }
         .sidebar.active { transform: translateX(0); }
         .main-layout { margin-left: 0; width: 100%; }
         .top-header { justify-content: space-between; padding: 0 20px; }
         .hamburger-admin { display: block; }
+        .mobile-sidebar-close { display: flex; }
         #main-content { padding: 20px; }
         body { overflow: auto; }
       }
     </style>
   </head>
   <body>
+    <!-- Mobile sidebar overlay -->
+    <div id="admin-sidebar-overlay"
+         style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:1000;"
+         onclick="toggleSidebar()"></div>
     <div class="dashboard-wrapper">
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
           <a class="sidebar-logo" href="{{ url_for('dashboard.admin_dashboard') }}">
             <span>🛡️</span> <span>VetSync Admin</span>
           </a>
+          <button class="mobile-sidebar-close" onclick="toggleSidebar()" aria-label="Close sidebar">
+            ✕ Close
+          </button>
         </div>
 
         <ul class="sidebar-nav">
@@ -251,7 +287,10 @@
 
     <script>
       function toggleSidebar() {
-        document.getElementById('sidebar').classList.toggle('active');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('admin-sidebar-overlay');
+        const isOpen = sidebar.classList.toggle('active');
+        if (overlay) overlay.style.display = isOpen ? 'block' : 'none';
       }
     </script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>

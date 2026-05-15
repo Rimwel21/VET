@@ -1,0 +1,14 @@
+{
+    "venvPath": ".",
+    "venv": "venv",
+    "include": [
+        "app",
+        "vet"
+    ],
+    "extraPaths": [
+        "c:\\Users\\Denmhar\\OneDrive\\Desktop\\vet 4.9\\vet\\venv\\Lib\\site-packages",
+        "c:\\Users\\Denmhar\\OneDrive\\Desktop\\vet 4.9\\vet\\app"
+    ],
+    "pythonPlatform": "Windows",
+    "typeCheckingMode": "basic"
+}

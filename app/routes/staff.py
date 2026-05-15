@@ -1,11 +1,13 @@
 import base64
 import json
 from datetime import datetime
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify # type: ignore
 from app.extensions import db
 from app.models.contact import ContactMessage
 from app.models.booking import Booking
 from app.models.report import Report
+from app.models.audit_log import AuditLog
+from app.utils.logger import log_action
 from app.models.availability import DoctorAvailability
 from app.models.user import User
 from app.middleware.decorators import login_required, admin_required, staff_required, _get_current_user
@@ -227,8 +229,18 @@ def pet_history_detail(pet_id):
 @admin_required
 def audit_logs():
     user = _get_current_user()
-    # In a real system, this would pull from an AuditLog model
-    return render_template('admin_audit_logs.html', user=user)
+    logs = AuditLog.query.order_by(AuditLog.timestamp.desc()).limit(50).all()
+    return render_template('admin_audit_logs.html', user=user, logs=logs)
+
+@staff_bp.route('/api/audit-logs/data')
+@login_required
+@admin_required
+def get_audit_logs_data():
+    logs = AuditLog.query.order_by(AuditLog.timestamp.desc()).limit(100).all()
+    return jsonify({
+        'success': True,
+        'logs': [log.to_dict() for log in logs]
+    })
 
 
 @staff_bp.route('/booking/<int:bid>/status', methods=['POST'])
@@ -249,6 +261,7 @@ def update_booking_status(bid):
         if user:
             booking.handled_by = f"{user.first_name} {user.last_name}"
         db.session.commit()
+        log_action('Booking Update', f'Changed status of Booking #{bid} to {status.capitalize()}.', user=user)
 
         if booking.user_id:
             send_push_notification(
