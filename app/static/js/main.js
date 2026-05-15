@@ -269,3 +269,59 @@ if (bookingForm) {
 if (navigator.onLine) {
     syncOfflineBookings();
 }
+
+// ===================== PWA INSTALLATION =====================
+let deferredPrompt;
+const installBtn = document.getElementById('pwaInstallBtn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+    // Prevent the mini-infobar from appearing on mobile
+    e.preventDefault();
+    // Stash the event so it can be triggered later.
+    deferredPrompt = e;
+    // Update UI notify the user they can install the PWA
+    if (installBtn) {
+        installBtn.style.display = 'flex';
+        // Add a subtle entrance animation
+        installBtn.style.animation = 'fadeInUp 0.6s ease forwards';
+    }
+});
+
+if (installBtn) {
+    installBtn.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        // Show the install prompt
+        deferredPrompt.prompt();
+        // Wait for the user to respond to the prompt
+        const { outcome } = await deferredPrompt.userChoice;
+        // Optionally, send analytics event with outcome of user choice
+        console.log(`User response to the install prompt: ${outcome}`);
+        // We've used the prompt, and can't use it again, throw it away
+        deferredPrompt = null;
+        // Hide the install button
+        installBtn.style.display = 'none';
+    });
+}
+
+window.addEventListener('appinstalled', (event) => {
+    // Log install to analytics
+    console.log('INSTALL: Success');
+    // Hide the install button
+    if (installBtn) {
+        installBtn.style.display = 'none';
+    }
+});
+
+// Helper for animations if not already present
+if (!document.getElementById('pwa-anim-styles')) {
+    const style = document.createElement('style');
+    style.id = 'pwa-anim-styles';
+    style.innerHTML = `
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    `;
+    document.head.appendChild(style);
+}
+

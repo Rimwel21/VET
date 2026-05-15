@@ -23,6 +23,29 @@
         box-shadow: 0 6px 20px rgba(31, 166, 220, 0.6);
         color: white;
     }
+
+    /* PREMIUM INSTALL BUTTON (Light/Sky Blue) */
+    .btn-install-premium {
+        background: linear-gradient(135deg, #7dd3fc 0%, #0ea5e9 100%);
+        color: white !important;
+        border: none !important;
+        padding: 0.85rem 2.5rem;
+        font-weight: 800 !important;
+        border-radius: 30px;
+        box-shadow: 0 6px 20px rgba(14, 165, 233, 0.4);
+        transition: all 0.3s ease;
+        cursor: pointer;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-size: 0.9rem;
+        width: 100%;
+        max-width: 100%;
+    }
+    .btn-install-premium:hover {
+        transform: translateY(-3px) scale(1.02);
+        box-shadow: 0 10px 25px rgba(14, 165, 233, 0.6);
+        background: linear-gradient(135deg, #a5f3fc 0%, #38bdf8 100%);
+    }
 </style>
 
 <!-- HERO SECTION -->
@@ -40,6 +63,9 @@
                 <a href="{{ url_for('main.services_page') }}" class="btn-secondary hero-action-services">Our Services</a>
                 <a href="{{ url_for('main.about') }}" class="btn-secondary hero-action-about">Know More</a>
                 <a href="{{ url_for('vetscan.vetscan') }}" class="btn-secondary hero-action-vetscan">Vet Scan</a>
+                <button id="pwaInstallBtn" class="btn-install-premium hero-action-install" style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 1.2rem;">📲</span> Install App
+                </button>
             </div>
         </div>
 
@@ -152,60 +178,70 @@ Our clinic provides 24/7 emergency support for urgent cases. If your pet is show
     </div>
 </section>
 
+<!-- PWA INSTALL PROMPT (VISIBLE ON HERO) -->
+<script>
+    // Force show the button if the user wants it visible, 
+    // even before the prompt event (as a placeholder)
+    document.addEventListener('DOMContentLoaded', () => {
+        const btn = document.getElementById('pwaInstallBtn');
+        if (btn) btn.style.display = 'flex';
+    });
+</script>
+
 <!-- NEW CONTACT SECTION ON HOMEPAGE -->
-<section class="contact-section" id="contact" style="padding: 100px 20px; background: #ffffff;">
-    <div style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1.5fr; gap: 60px; align-items: start;">
-        <div>
-            <h2 style="font-size: 2.5rem; color: #1a3c8f; font-weight: 900; margin-bottom: 20px;">Get in Touch</h2>
-            <p style="color: #64748b; line-height: 1.8; margin-bottom: 40px; font-size: 1.1rem;">Have questions about our services or need to follow up on a visit? Send us a message and our team will get back to you within 24 hours.</p>
+<section class="contact-section" id="contact">
+    <div class="contact-container">
+        <div class="contact-info">
+            <h2 class="contact-title">Get in Touch</h2>
+            <p class="contact-subtitle">Have questions about our services or need to follow up on a visit? Send us a message and our team will get back to you within 24 hours.</p>
             
-            <div style="display: flex; flex-direction: column; gap: 25px;">
-                <div style="display: flex; gap: 15px; align-items: center;">
-                    <div style="width: 45px; height: 45px; background: #f0f7ff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px;">📞</div>
+            <div class="contact-methods">
+                <div class="contact-method">
+                    <div class="method-icon">📞</div>
                     <div>
-                        <div style="font-weight: 700; color: #1a3c8f;">Phone</div>
-                        <div style="color: #64748b;">(123) 456-7890</div>
+                        <div class="method-label">Phone</div>
+                        <div class="method-value">(123) 456-7890</div>
                     </div>
                 </div>
-                <div style="display: flex; gap: 15px; align-items: center;">
-                    <div style="width: 45px; height: 45px; background: #f0f7ff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px;">✉️</div>
+                <div class="contact-method">
+                    <div class="method-icon">✉️</div>
                     <div>
-                        <div style="font-weight: 700; color: #1a3c8f;">Email</div>
-                        <div style="color: #64748b;">hello@vetsync.com</div>
+                        <div class="method-label">Email</div>
+                        <div class="method-value">hello@vetsync.com</div>
                     </div>
                 </div>
-                <div style="display: flex; gap: 15px; align-items: center;">
-                    <div style="width: 45px; height: 45px; background: #f0f7ff; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px;">📍</div>
+                <div class="contact-method">
+                    <div class="method-icon">📍</div>
                     <div>
-                        <div style="font-weight: 700; color: #1a3c8f;">Location</div>
-                        <div style="color: #64748b;">123 Vet Street, Metro City</div>
+                        <div class="method-label">Location</div>
+                        <div class="method-value">123 Vet Street, Metro City</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div style="background: #f8fbff; padding: 40px; border-radius: 24px; border: 1px solid #eef2ff; box-shadow: 0 10px 30px rgba(26, 60, 143, 0.05);">
+        <div class="contact-form-card">
             <form action="{{ url_for('main.contact') }}" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
-                    <div>
-                        <label style="display: block; font-size: 0.9rem; font-weight: 700; color: #1a3c8f; margin-bottom: 8px;">Name</label>
-                        <input type="text" name="name" placeholder="Your Name" required style="width: 100%; padding: 12px 16px; border: 1.5px solid #e2e8f0; border-radius: 10px; background: white; font-family: inherit;">
+                <div class="form-row">
+                    <div class="form-group-contact">
+                        <label>Name</label>
+                        <input type="text" name="name" placeholder="Your Name" required>
                     </div>
-                    <div>
-                        <label style="display: block; font-size: 0.9rem; font-weight: 700; color: #1a3c8f; margin-bottom: 8px;">Email</label>
-                        <input type="email" name="email" placeholder="Email Address" required style="width: 100%; padding: 12px 16px; border: 1.5px solid #e2e8f0; border-radius: 10px; background: white; font-family: inherit;">
+                    <div class="form-group-contact">
+                        <label>Email</label>
+                        <input type="email" name="email" placeholder="Email Address" required>
                     </div>
                 </div>
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; font-size: 0.9rem; font-weight: 700; color: #1a3c8f; margin-bottom: 8px;">Subject</label>
-                    <input type="text" name="subject" placeholder="What is this about?" required style="width: 100%; padding: 12px 16px; border: 1.5px solid #e2e8f0; border-radius: 10px; background: white; font-family: inherit;">
+                <div class="form-group-contact">
+                    <label>Subject</label>
+                    <input type="text" name="subject" placeholder="What is this about?" required>
                 </div>
-                <div style="margin-bottom: 25px;">
-                    <label style="display: block; font-size: 0.9rem; font-weight: 700; color: #1a3c8f; margin-bottom: 8px;">Message</label>
-                    <textarea name="message" placeholder="Type your message here..." rows="4" required style="width: 100%; padding: 12px 16px; border: 1.5px solid #e2e8f0; border-radius: 10px; background: white; font-family: inherit; resize: vertical;"></textarea>
+                <div class="form-group-contact">
+                    <label>Message</label>
+                    <textarea name="message" placeholder="Type your message here..." rows="4" required></textarea>
                 </div>
-                <button type="submit" style="width: 100%; background: #1a3c8f; color: white; border: none; padding: 16px; border-radius: 12px; font-weight: 800; font-size: 1rem; cursor: pointer; transition: all 0.2s;">🚀 Send Message</button>
+                <button type="submit" class="btn-contact-submit">🚀 Send Message</button>
             </form>
         </div>
     </div>
