@@ -204,6 +204,11 @@
     </style>
   </head>
   <body>
+    <!-- Mobile sidebar overlay -->
+    <div id="staff-sidebar-overlay"
+         style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:1099;"
+         onclick="toggleStaffSidebar()"></div>
+
     <div class="staff-app-shell">
       <!-- SIDEBAR -->
       <aside class="staff-sidebar" id="sidebar">
@@ -241,8 +246,35 @@
         </ul>
 
         <div class="sidebar-status">
-          <button type="button" id="btn-enable-push" style="background: #10b981; border: none; color: white; padding: 10px; border-radius: 8px; font-weight: 700; width: 100%; cursor: pointer; font-size: 0.8rem;">
-            ✅ Notifications On
+          <button
+            type="button"
+            id="btn-enable-push"
+            onclick="togglePushNotifications()"
+            title="Tap to toggle push notifications"
+            aria-label="Push notification toggle"
+            style="
+              background: #dc2626;
+              border: none;
+              color: white;
+              padding: 11px 14px;
+              border-radius: 10px;
+              font-weight: 800;
+              width: 100%;
+              cursor: pointer;
+              font-size: 0.85rem;
+              letter-spacing: 0.3px;
+              transition: background 0.25s, transform 0.15s;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 8px;
+            "
+            onmouseover="this.style.filter='brightness(1.1)'"
+            onmouseout="this.style.filter=''"
+            onmousedown="this.style.transform='scale(0.97)'"
+            onmouseup="this.style.transform=''"
+          >
+            🔴 Notifications OFF
           </button>
         </div>
       </aside>
@@ -279,12 +311,16 @@
     <div id="toast-container" style="position: fixed; top: 20px; right: 20px; z-index: 9999; pointer-events: none; display: flex; flex-direction: column; gap: 10px;"></div>
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/push-notifications.js') }}"></script>
     <script>
       function toggleStaffSidebar() {
-        document.getElementById('sidebar').classList.toggle('active');
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('staff-sidebar-overlay');
+        const isOpen  = sidebar.classList.toggle('active');
+        overlay.style.display = isOpen ? 'block' : 'none';
       }
 
-      // Simple Push Notifications bridge
+      // Service Worker + toast listener
       if ('serviceWorker' in navigator) {
           navigator.serviceWorker.register("{{ url_for('main.service_worker') }}", { scope: "/" });
           navigator.serviceWorker.addEventListener('message', (event) => {

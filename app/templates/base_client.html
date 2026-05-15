@@ -19,12 +19,14 @@
         --client-primary: #1a3c8f;
         --client-accent: #00c9b1;
         --client-bg: #f8fafc;
+        --header-h: 60px;
       }
 
+      *, *::before, *::after { box-sizing: border-box; }
+
       body {
-        margin: 0;
-        padding: 0;
-        background-color: var(--client-bg);
+        margin: 0; padding: 0;
+        background: var(--client-bg);
         font-family: 'Poppins', sans-serif;
         height: 100vh;
         overflow: hidden;
@@ -34,176 +36,270 @@
         display: flex;
         height: 100vh;
         width: 100vw;
+        overflow: hidden;
       }
 
-      /* SIDEBAR */
+      /* ── SIDEBAR ── */
       .sidebar {
         width: var(--client-sidebar-width);
-        background: var(--client-primary); /* Dark Blue */
-        border-right: none;
+        background: var(--client-primary);
         position: fixed;
         height: 100vh;
-        left: 0;
-        top: 0;
+        left: 0; top: 0;
         display: flex;
         flex-direction: column;
         z-index: 1000;
         transition: transform 0.3s ease;
-        box-shadow: 4px 0 20px rgba(0,0,0,0.1);
+        box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+        overflow-y: auto;
       }
 
       .sidebar-header {
-        padding: 24px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        padding: 20px 24px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        flex-shrink: 0;
       }
 
       .sidebar-logo {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
         text-decoration: none;
         color: white;
         font-family: 'Nunito', sans-serif;
         font-weight: 900;
-        font-size: 1.25rem;
+        font-size: 1.2rem;
       }
 
       .sidebar-nav {
         flex: 1;
-        padding: 16px 12px;
+        padding: 12px 10px;
         list-style: none;
         margin: 0;
-        overflow-y: auto;
       }
 
-      .sidebar-nav li { margin-bottom: 4px; }
+      .sidebar-nav li { margin-bottom: 3px; }
 
       .sidebar-nav a {
         display: flex;
         align-items: center;
         gap: 12px;
-        padding: 12px 16px;
-        color: rgba(255, 255, 255, 0.7);
+        padding: 11px 14px;
+        color: rgba(255,255,255,0.75);
         text-decoration: none;
         border-radius: 10px;
         font-weight: 700;
         transition: all 0.2s;
-        font-size: 0.95rem;
+        font-size: 0.9rem;
       }
 
       .sidebar-nav a:hover {
-        background: rgba(255, 255, 255, 0.15); /* Brighter hover */
+        background: rgba(255,255,255,0.15);
         color: white;
-        transform: translateX(6px); /* Interactive slide effect */
+        transform: translateX(5px);
       }
 
       .sidebar-nav a.active {
         background: white;
         color: var(--client-primary);
         font-weight: 800;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       }
 
-      .sidebar-footer {
-        padding: 16px;
-        border-top: 1px solid #eef2ff;
-      }
-
-      /* MAIN CONTENT */
+      /* ── MAIN LAYOUT ── */
       .main-layout {
         flex: 1;
         margin-left: var(--client-sidebar-width);
         display: flex;
         flex-direction: column;
         min-width: 0;
-        background: #f8fafc;
+        background: var(--client-bg);
+        height: 100vh;
         overflow-y: auto;
       }
 
+      /* ── TOP HEADER ── */
       .top-header {
         background: white;
-        height: 60px;
-        padding: 0 32px;
+        height: var(--header-h);
+        min-height: var(--header-h);
+        padding: 0 20px;
         display: flex;
         align-items: center;
-        justify-content: flex-end; /* Pushed to top right */
-        border-bottom: 1px solid #e2e8f0;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.08); /* Increased depth shadow */
+        justify-content: space-between;   /* hamburger left, controls right */
+        border-bottom: 2px solid #e2e8f0;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.07);
         position: sticky;
         top: 0;
         z-index: 900;
         flex-shrink: 0;
-        gap: 15px;
+        gap: 10px;
       }
 
-      .header-user {
+      .header-left {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: nowrap;
+        overflow: hidden;
       }
 
       .role-indicator {
-        font-size: 0.7rem;
+        font-size: 0.65rem;
         font-weight: 800;
         color: #64748b;
         text-transform: uppercase;
         letter-spacing: 1px;
-        margin-right: 4px;
+        white-space: nowrap;
       }
 
       .user-pill {
         display: flex;
         align-items: center;
-        gap: 8px;
-        padding: 6px 16px;
-        background: var(--client-primary); /* Dark Blue */
+        gap: 6px;
+        padding: 5px 12px;
+        background: var(--client-primary);
         border-radius: 8px;
         font-weight: 700;
         color: white;
-        font-size: 0.85rem;
-        box-shadow: 0 4px 12px rgba(26, 60, 143, 0.15);
+        font-size: 0.82rem;
+        white-space: nowrap;
+        box-shadow: 0 2px 8px rgba(26,60,143,0.2);
       }
 
       .btn-logout {
-        padding: 6px 16px;
-        background: #ef4444; /* High-contrast Red */
+        padding: 5px 12px;
+        background: #ef4444;
         color: white;
         text-decoration: none;
         border-radius: 8px;
         font-weight: 700;
-        font-size: 0.8rem;
+        font-size: 0.78rem;
+        white-space: nowrap;
         transition: all 0.2s;
-        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+        box-shadow: 0 2px 8px rgba(239,68,68,0.2);
       }
       .btn-logout:hover { background: #dc2626; transform: translateY(-1px); }
 
-      #main-content {
-        padding: 24px 32px;
-        max-width: 1400px;
-        margin: 0 auto;
-        width: 100%;
-        box-sizing: border-box;
+      /* PWA Install Button */
+      #pwa-install-btn {
+        display: none;          /* shown via JS when event fires */
+        align-items: center;
+        gap: 5px;
+        padding: 5px 11px;
+        background: #0ea5e9;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.2s;
       }
+      #pwa-install-btn:hover { background: #0284c7; }
 
+      /* Push Notification Toggle */
+      #push-bell-btn {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 11px;
+        background: #dc2626;     /* RED = disabled by default */
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.25s, transform 0.15s;
+        flex-shrink: 0;
+        min-width: 42px;
+        justify-content: center;
+      }
+      #push-bell-btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+      #push-bell-btn:active { transform: scale(0.96); }
+
+      /* Hamburger */
       .hamburger-btn {
         display: none;
         background: none;
         border: none;
-        font-size: 24px;
+        font-size: 22px;
         cursor: pointer;
+        padding: 4px 6px;
+        border-radius: 6px;
+        color: var(--client-primary);
+        flex-shrink: 0;
+      }
+      .hamburger-btn:hover { background: #f1f5f9; }
+
+      /* Sidebar overlay for mobile */
+      .sidebar-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.45);
+        z-index: 999;
+      }
+      .sidebar-overlay.active { display: block; }
+
+      /* Main content area */
+      #main-content {
+        padding: 20px 28px;
+        max-width: 1400px;
+        margin: 0 auto;
+        width: 100%;
       }
 
+      /* ── MOBILE ── */
       @media (max-width: 1024px) {
-        .sidebar { transform: translateX(-100%); }
-        .sidebar.active { transform: translateX(0); }
-        .main-layout { margin-left: 0; width: 100%; height: auto; overflow: visible; }
-        .hamburger-btn { display: block; }
-        .top-header { padding: 0 20px; }
         body { overflow: auto; }
+
+        .dashboard-wrapper { overflow: visible; height: auto; min-height: 100vh; }
+
+        .sidebar {
+          transform: translateX(-100%);
+          z-index: 1001;
+        }
+        .sidebar.active { transform: translateX(0); }
+
+        .main-layout {
+          margin-left: 0;
+          width: 100%;
+          height: auto;
+          overflow: visible;
+          min-height: 100vh;
+        }
+
+        .hamburger-btn { display: flex; }
+        .role-indicator { display: none; } /* hide on small screens to save space */
+
+        #main-content { padding: 14px 14px; }
+      }
+
+      @media (max-width: 480px) {
+        .top-header { padding: 0 10px; gap: 5px; }
+        .user-pill { padding: 4px 8px; font-size: 0.73rem; }
+        .btn-logout { padding: 4px 8px; font-size: 0.7rem; }
+        #pwa-install-btn { padding: 4px 8px; font-size: 0.7rem; }
+        /* Keep push toggle pill visible but compact */
+        #push-bell-btn { padding: 4px 8px; font-size: 0.78rem; min-width: 36px; }
       }
     </style>
   </head>
   <body>
+    <!-- Mobile sidebar overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
+
     <div class="dashboard-wrapper">
       <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
@@ -214,7 +310,7 @@
 
         <ul class="sidebar-nav">
           <li>
-            <a href="{{ url_for('dashboard.dashboard') }}" class="{% if request.endpoint == 'dashboard.dashboard' %}active{% endif %}">
+            <a href="{{ url_for('dashboard.dashboard') }}" class="{% if request.endpoint == 'dashboard.client_dashboard' or request.endpoint == 'dashboard.dashboard' %}active{% endif %}">
               <span>📊</span> Dashboard
             </a>
           </li>
@@ -229,7 +325,7 @@
             </a>
           </li>
           <li>
-            <a href="javascript:void(0)" onclick="openContactModal()">
+            <a href="javascript:void(0)" onclick="openContactModal(); closeSidebar();">
               <span>✉️</span> Contact Clinic
             </a>
           </li>
@@ -243,8 +339,21 @@
 
       <div class="main-layout">
         <header class="top-header">
-          <button class="hamburger-btn" onclick="toggleSidebar()">☰</button>
-          <div class="header-user">
+          <!-- LEFT: hamburger -->
+          <div class="header-left">
+            <button class="hamburger-btn" id="hamburger-btn" onclick="toggleSidebar()" aria-label="Open menu">☰</button>
+          </div>
+
+          <!-- RIGHT: PWA, bell, user, logout -->
+          <div class="header-right">
+            <!-- PWA Install -->
+            <button id="pwa-install-btn" title="Install VetSync App">⬇️ Install App</button>
+
+            <!-- Push Notification Toggle -->
+            <button id="push-bell-btn" onclick="togglePushNotifications()" title="Tap to enable push notifications" aria-label="Push notifications toggle">
+              🔕
+            </button>
+
             <span class="role-indicator">Pet Owner</span>
             <div class="user-pill">
               <span>👤</span> {{ current_user.first_name }}
@@ -255,7 +364,7 @@
 
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
-          <div class="flash-container" style="padding: 16px 32px 0;">
+          <div class="flash-container" style="padding: 12px 20px 0;">
             {% for category, message in messages %}
             <div class="flash flash-{{ category }}">{{ message }} <button onclick="this.parentElement.remove()">×</button></div>
             {% endfor %}
@@ -271,46 +380,77 @@
 
     <!-- CONTACT CLINIC MODAL -->
     <div id="contactModal" class="modal-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center; backdrop-filter:blur(4px);">
-      <div class="modal-card" style="background:white; width:100%; max-width:500px; border-radius:20px; padding:32px; position:relative; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); margin: 20px;">
-        <button onclick="closeContactModal()" style="position:absolute; top:20px; right:20px; background:none; border:none; font-size:24px; cursor:pointer; color:#64748b;">&times;</button>
-        <div style="text-align:center; margin-bottom:24px;">
-          <h2 style="color:#1a3c8f; font-family:'Nunito',sans-serif; font-weight:900; margin-bottom:8px;">✉️ Contact Clinic</h2>
-          <p style="color:#64748b; font-size:0.9rem;">Have a question about your pet's health or an appointment? Send us a message directly.</p>
+      <div class="modal-card" style="background:white; width:100%; max-width:500px; border-radius:20px; padding:28px; position:relative; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); margin: 16px;">
+        <button onclick="closeContactModal()" style="position:absolute; top:16px; right:16px; background:none; border:none; font-size:22px; cursor:pointer; color:#64748b;">&times;</button>
+        <div style="text-align:center; margin-bottom:20px;">
+          <h2 style="color:#1a3c8f; font-family:'Nunito',sans-serif; font-weight:900; margin-bottom:6px;">✉️ Contact Clinic</h2>
+          <p style="color:#64748b; font-size:0.88rem; margin:0;">Have a question about your pet's health or an appointment? Send us a message directly.</p>
         </div>
         <form action="{{ url_for('main.contact') }}" method="POST">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="name" value="{{ current_user.first_name }} {{ current_user.last_name }}">
           <input type="hidden" name="email" value="{{ current_user.email }}">
-          <div style="margin-bottom:16px;">
-            <input type="text" name="subject" placeholder="Subject (e.g. Question about Buddy)" required style="width:100%; padding:14px; border:1.5px solid #eef2ff; border-radius:12px; font-size:0.95rem; font-family:inherit;">
+          <div style="margin-bottom:14px;">
+            <input type="text" name="subject" placeholder="Subject (e.g. Question about Buddy)" required style="width:100%; padding:12px 14px; border:1.5px solid #eef2ff; border-radius:12px; font-size:0.92rem; font-family:inherit; box-sizing:border-box;">
           </div>
-          <div style="margin-bottom:20px;">
-            <textarea name="message" placeholder="Your message..." rows="4" required style="width:100%; padding:14px; border:1.5px solid #eef2ff; border-radius:12px; font-size:0.95rem; font-family:inherit; resize:none;"></textarea>
+          <div style="margin-bottom:18px;">
+            <textarea name="message" placeholder="Your message..." rows="4" required style="width:100%; padding:12px 14px; border:1.5px solid #eef2ff; border-radius:12px; font-size:0.92rem; font-family:inherit; resize:none; box-sizing:border-box;"></textarea>
           </div>
-          <button type="submit" style="width:100%; padding:14px; background:#1a3c8f; color:white; border:none; border-radius:12px; font-weight:700; font-size:1rem; cursor:pointer; transition:0.2s; box-shadow:0 4px 12px rgba(26,60,143,0.2);">Send Message</button>
+          <button type="submit" style="width:100%; padding:13px; background:#1a3c8f; color:white; border:none; border-radius:12px; font-weight:700; font-size:0.97rem; cursor:pointer; transition:0.2s; box-shadow:0 4px 12px rgba(26,60,143,0.2);">Send Message</button>
         </form>
       </div>
     </div>
 
     <script>
+      // ── Sidebar toggle ──
       function toggleSidebar() {
         document.getElementById('sidebar').classList.toggle('active');
+        document.getElementById('sidebar-overlay').classList.toggle('active');
       }
+      function closeSidebar() {
+        document.getElementById('sidebar').classList.remove('active');
+        document.getElementById('sidebar-overlay').classList.remove('active');
+      }
+
+      // ── Contact modal ──
       function openContactModal() {
         document.getElementById('contactModal').style.display = 'flex';
       }
       function closeContactModal() {
         document.getElementById('contactModal').style.display = 'none';
       }
-      // Close modal if clicking outside
-      window.onclick = function(event) {
-        let modal = document.getElementById('contactModal');
-        if (event.target == modal) {
-          closeContactModal();
+      window.addEventListener('click', function(e) {
+        const modal = document.getElementById('contactModal');
+        if (e.target === modal) closeContactModal();
+      });
+
+      // ── PWA Install ──
+      let _pwaPrompt = null;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        _pwaPrompt = e;
+        const btn = document.getElementById('pwa-install-btn');
+        if (btn) btn.style.display = 'flex';
+      });
+
+      document.getElementById('pwa-install-btn')?.addEventListener('click', async () => {
+        if (!_pwaPrompt) return;
+        _pwaPrompt.prompt();
+        const { outcome } = await _pwaPrompt.userChoice;
+        if (outcome === 'accepted') {
+          document.getElementById('pwa-install-btn').style.display = 'none';
+          _pwaPrompt = null;
         }
-      }
+      });
+
+      window.addEventListener('appinstalled', () => {
+        const btn = document.getElementById('pwa-install-btn');
+        if (btn) btn.style.display = 'none';
+        _pwaPrompt = null;
+      });
     </script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/push-notifications.js') }}"></script>
     {% block extra_js %}{% endblock %}
     {% include 'chatbot.html' %}
   </body>
