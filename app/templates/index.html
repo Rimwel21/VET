@@ -40,6 +40,10 @@
         font-size: 0.9rem;
         width: 100%;
         max-width: 100%;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 10px !important;
     }
     .btn-install-premium:hover {
         transform: translateY(-3px) scale(1.02);
@@ -63,8 +67,8 @@
                 <a href="{{ url_for('main.services_page') }}" class="btn-secondary hero-action-services">Our Services</a>
                 <a href="{{ url_for('main.about') }}" class="btn-secondary hero-action-about">Know More</a>
                 <a href="{{ url_for('vetscan.vetscan') }}" class="btn-secondary hero-action-vetscan">Vet Scan</a>
-                <button id="pwaInstallBtn" class="btn-install-premium hero-action-install" style="display: flex; align-items: center; gap: 10px;">
-                    <span style="font-size: 1.2rem;">📲</span> Install App
+                <button id="pwaInstallBtn" class="btn-install-premium hero-action-install">
+                    <span style="font-size: 1.2rem;">📲</span> INSTALL APP
                 </button>
             </div>
         </div>
