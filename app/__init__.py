@@ -71,12 +71,12 @@ def _seed_data():
 
     if Service.query.count() == 0:
         db.session.add_all([
-            Service(name="General Checkup", icon="🩺", desc="Comprehensive health examination for your pet"),
-            Service(name="Vaccination",     icon="💉", desc="Keep your pet protected with up-to-date vaccines"),
-            Service(name="Dental Care",     icon="🦷", desc="Professional dental cleaning and oral health care"),
-            Service(name="Surgery",         icon="🏥", desc="Advanced surgical procedures with expert veterinarians"),
-            Service(name="Grooming",        icon="✂️",  desc="Full grooming services to keep your pet looking great"),
-            Service(name="Emergency Care",  icon="🚨", desc="24/7 emergency veterinary care for urgent situations"),
+            Service(name="General Checkup", icon="🩺", desc="Comprehensive health examination for your pet"), # type: ignore
+            Service(name="Vaccination",     icon="💉", desc="Keep your pet protected with up-to-date vaccines"), # type: ignore
+            Service(name="Dental Care",     icon="🦷", desc="Professional dental cleaning and oral health care"), # type: ignore
+            Service(name="Surgery",         icon="🏥", desc="Advanced surgical procedures with expert veterinarians"), # type: ignore
+            Service(name="Grooming",        icon="✂️",  desc="Full grooming services to keep your pet looking great"), # type: ignore
+            Service(name="Emergency Care",  icon="🚨", desc="24/7 emergency veterinary care for urgent situations"), # type: ignore
         ])
 
     _add_user_if_missing('demo@vetsync.com',           'Demo',  'User',         '0000000000', 'client',  'demo123')
@@ -89,6 +89,6 @@ def _seed_data():
 def _add_user_if_missing(email, first, last, contact, role, password):
     from app.models.user import User
     if not User.query.filter_by(email=email).first():
-        u = User(first_name=first, last_name=last, email=email, contact=contact, role=role)
+        u = User(first_name=first, last_name=last, email=email, contact=contact, role=role) # type: ignore
         u.set_password(password)
         db.session.add(u)
