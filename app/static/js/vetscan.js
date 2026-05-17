@@ -5,6 +5,32 @@ function updateBreeds() {
   sel.innerHTML = breeds.map((breed) => `<option value="${breed}">${breed}</option>`).join('');
 }
 
+function updateSymptomCount() {
+  const count = parseInt(document.getElementById('num_symptoms').value, 10);
+  for (let i = 1; i <= 4; i++) {
+    const field = document.getElementById(`symptom-field-${i}`);
+    if (i <= count) {
+      field.style.display = 'flex'; // Use the flex layout of vs-field
+      field.style.flexDirection = 'column';
+    } else {
+      field.style.display = 'none';
+    }
+  }
+
+  // Clear previous dynamic classes
+  const sym1 = document.getElementById('symptom-field-1');
+  const sym3 = document.getElementById('symptom-field-3');
+  sym1.classList.remove('center-if-1');
+  sym3.classList.remove('center-if-3');
+
+  // Centering logic for exactly 1 or 3 symptoms
+  if (count === 1) {
+    sym1.classList.add('center-if-1');
+  } else if (count === 3) {
+    sym3.classList.add('center-if-3');
+  }
+}
+
 function setToggle(fieldId, value, btn) {
   document.getElementById(fieldId).value = value;
   const group = btn.closest('.toggle-group');
@@ -36,16 +62,17 @@ async function runPrediction() {
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner"></div> Analyzing...';
 
+  const symCount = parseInt(document.getElementById('num_symptoms').value, 10) || 1;
   const payload = {
     animal_type: document.getElementById('animal_type').value,
     breed: document.getElementById('breed').value,
     age: document.getElementById('age').value,
     gender: document.getElementById('gender').value,
     weight: document.getElementById('weight').value,
-    symptom_1: document.getElementById('symptom_1').value,
-    symptom_2: document.getElementById('symptom_2').value,
-    symptom_3: document.getElementById('symptom_3').value,
-    symptom_4: document.getElementById('symptom_4').value,
+    symptom_1: symCount >= 1 ? document.getElementById('symptom_1').value : 'None',
+    symptom_2: symCount >= 2 ? document.getElementById('symptom_2').value : 'None',
+    symptom_3: symCount >= 3 ? document.getElementById('symptom_3').value : 'None',
+    symptom_4: symCount >= 4 ? document.getElementById('symptom_4').value : 'None',
     duration: document.getElementById('duration').value,
     appetite_loss: document.getElementById('appetite_loss').value,
     vomiting: document.getElementById('vomiting').value,
@@ -56,8 +83,8 @@ async function runPrediction() {
     skin_lesions: document.getElementById('skin_lesions').value,
     nasal_discharge: document.getElementById('nasal_discharge').value,
     eye_discharge: document.getElementById('eye_discharge').value,
-    body_temperature: document.getElementById('body_temperature').value,
-    heart_rate: document.getElementById('heart_rate').value,
+    body_temperature: 39.0, // Hardcoded fallback (field removed from UI for normal users)
+    heart_rate: 100,        // Hardcoded fallback (field removed from UI for normal users)
   };
 
   try {
@@ -126,11 +153,18 @@ function renderResults(predictions, form) {
   if (form.labored_breathing === 'Yes') signs.push('labored breathing');
   if (form.skin_lesions === 'Yes') signs.push('skin lesions');
 
+  const selSyms = [];
+  if (form.symptom_1 !== 'None') selSyms.push(form.symptom_1);
+  if (form.symptom_2 !== 'None') selSyms.push(form.symptom_2);
+  if (form.symptom_3 !== 'None') selSyms.push(form.symptom_3);
+  if (form.symptom_4 !== 'None') selSyms.push(form.symptom_4);
+  const symText = selSyms.length ? selSyms.join(', ') : 'None';
+
   html += `
     <div class="summary-box" style="margin-top: 1.5rem; text-align: left;">
       <div style="margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 1px solid #d9e6f7;">
         <strong>${form.animal_type}</strong> / ${form.breed} / ${form.age}yr / ${form.weight}kg<br>
-        Primary: <strong style="color:#1a202c;">${form.symptom_1}</strong>${signs.length ? ` / Also: ${signs.join(', ')}` : ''}
+        Symptoms: <strong style="color:#1a202c;">${symText}</strong>${signs.length ? ` / Signs: ${signs.join(', ')}` : ''}
       </div>
       
       <h4 style="color: #1a3c8f; font-family: 'Nunito', sans-serif; font-size: 1rem; font-weight: 800; margin-bottom: 0.5rem;">Understanding Your Results</h4>
@@ -141,7 +175,11 @@ function renderResults(predictions, form) {
         <strong style="color:#1a202c;">100% Normalized Scale:</strong> The top predictions are normalized to sum to 100%. This displays the relative likelihood among the most probable diseases.
       </p>
       <p style="margin-bottom: 0.5rem; font-size: 0.82rem; line-height: 1.5; color: #475569;">
-        <strong style="color:#1a202c;">Risk Levels:</strong> <span style="color:#ea580c; font-weight:800;">High Risk</span> indicates potentially severe or rapid-onset conditions requiring urgent evaluation, whereas <span style="color:#16a34a; font-weight:800;">Low Risk</span> conditions may be less critical but still need monitoring.
+        <strong style="color:#1a202c;">Risk Levels:</strong> 
+        <span style="color:#b91c1c; font-weight:800;">Critical Risk</span> demands immediate emergency veterinary intervention. 
+        <span style="color:#ea580c; font-weight:800;">High Risk</span> indicates severe or rapid-onset conditions requiring urgent evaluation. 
+        <span style="color:#b45309; font-weight:800;">Medium Risk</span> suggests moderate symptoms that warrant a clinical diagnostic follow-up. 
+        <span style="color:#16a34a; font-weight:800;">Low Risk</span> conditions are generally stable but require routine monitoring.
       </p>
     </div>
     

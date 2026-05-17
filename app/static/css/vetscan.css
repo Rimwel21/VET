@@ -256,6 +256,9 @@
 .vs-form-grid:last-child {
   margin-bottom: 0;
 }
+.vs-form-grid.one {
+  grid-template-columns: minmax(0, 1fr);
+}
 
 .vs-form-grid.two {
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -263,6 +266,15 @@
 
 .vs-form-grid.three {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.vs-vital-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-areas: 
+    "age age gender gender weight weight"
+    "duration duration duration numsymptoms numsymptoms numsymptoms";
 }
 
 .vs-sign-grid {
@@ -617,6 +629,15 @@
   }
 }
 
+@media (min-width: 541px) {
+  .center-if-3,
+  .center-if-1 {
+    grid-column: 1 / -1;
+    width: calc(50% - 0.5rem);
+    margin: 0 auto;
+  }
+}
+
 @media (max-width: 800px) {
   .vetscan-shell {
     padding: 5.25rem 1rem 3rem;
@@ -645,13 +666,28 @@
   .vs-sign-grid {
     grid-template-columns: 1fr 1fr;
   }
+
+  .vs-vital-grid {
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-areas: 
+      "age gender"
+      "duration weight"
+      "numsymptoms numsymptoms";
+  }
 }
 
 @media (max-width: 540px) {
   .vs-form-grid.two,
   .vs-form-grid.three,
-  .vs-sign-grid {
+  .vs-sign-grid,
+  .vs-vital-grid {
     grid-template-columns: 1fr;
+    grid-template-areas: 
+      "age"
+      "gender"
+      "weight"
+      "duration"
+      "numsymptoms";
   }
 
   .vs-back-btn,
