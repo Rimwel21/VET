@@ -113,23 +113,25 @@ def predict_disease(form: dict) -> list:
     classes = model.classes_
 
     top_idx = np.argsort(proba)[::-1][:5]
+    
+    # Extract the probabilities for the top predictions
+    top_probs = proba[top_idx]
+    
+    # Normalize the top probabilities so their sum equals 1.0 (100%)
+    total_top_prob = np.sum(top_probs)
+    if total_top_prob > 0:
+        top_probs_normalized = top_probs / total_top_prob
+    else:
+        top_probs_normalized = top_probs
+        
     results = []
-    for idx in top_idx:
+    for i, idx in enumerate(top_idx):
         disease = DISEASES[classes[idx]]
-        conf = float(proba[idx])
-        if conf < 0.01:
-            break
+        conf = float(top_probs_normalized[i])
         results.append({
             'disease':    disease,
             'confidence': round(conf * 100, 1),
             'severity':   get_severity(disease),
-        })
-
-    if not results:
-        results.append({
-            'disease':    DISEASES[classes[top_idx[0]]],
-            'confidence': round(float(proba[top_idx[0]]) * 100, 1),
-            'severity':   'low',
         })
 
     return results

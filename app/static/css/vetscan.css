@@ -93,8 +93,9 @@
 }
 
 .vetscan-hero {
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
+  grid-template-columns: 1fr;
+  align-items: center;
+  text-align: center;
   gap: 2rem;
   margin-bottom: 2rem;
   padding: 2rem;
@@ -123,12 +124,16 @@
 
 .vs-eyebrow,
 .vs-section-kicker {
-  color: var(--vs-accent);
-  font-size: 0.75rem;
-  font-weight: 800;
+  color: #1a3c8f !important; /* Force a strong dark blue color */
+  font-size: 0.85rem;
+  font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   margin-bottom: 0.35rem;
+}
+
+.vs-eyebrow {
+  color: #aae0ff !important; /* Keep eyebrow light for the blue hero background */
 }
 
 .vetscan-hero h1 {
@@ -293,6 +298,16 @@
   transition: border-color 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
 }
 
+/* Force the number input arrows (spin buttons) to be permanently visible without a dark box */
+.vs-field input[type="number"]::-webkit-inner-spin-button, 
+.vs-field input[type="number"]::-webkit-outer-spin-button {
+  opacity: 1 !important;
+  display: block;
+  cursor: pointer;
+  background: transparent !important;
+  filter: none !important;
+}
+
 .vs-field select {
   cursor: pointer;
 }
@@ -313,10 +328,10 @@
 
 .toggle-btn {
   min-height: 44px;
-  border: 1.5px solid var(--vs-border);
+  border: 1.5px solid #cbd5e1; /* Slightly darker default border */
   border-radius: 999px;
   background: #f8fbff;
-  color: var(--vs-muted);
+  color: #475569; /* Darker default text color instead of muted */
   cursor: pointer;
   font-family: 'Poppins', sans-serif;
   font-weight: 800;
@@ -335,9 +350,9 @@
 }
 
 .toggle-btn.active-no {
-  background: #eef4fb;
-  border-color: #cbd8ea;
-  color: #4b607d;
+  background: #e2e8f0; /* Solid gray background to show selection clearly */
+  border-color: #94a3b8; /* Solid gray border */
+  color: #1e293b; /* Very dark text */
 }
 
 .predict-btn {
@@ -400,7 +415,12 @@
   place-items: center;
   gap: 1rem;
   text-align: center;
-  color: var(--vs-muted);
+  color: #1a202c !important; /* Force a dark color */
+}
+
+.results-placeholder p {
+  color: #1a202c !important; /* Force text to dark grey */
+  font-weight: 600;
 }
 
 .placeholder-mark {

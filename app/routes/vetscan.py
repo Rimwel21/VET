@@ -8,11 +8,16 @@ vetscan_bp = Blueprint('vetscan', __name__)
 
 @vetscan_bp.route('/vetscan')
 def vetscan():
+    num_classes = len(meta.get('diseases', {})) if meta.get('diseases') else 14
+    total_samples = meta.get('total_samples', 20000) 
+    
     return render_template('vetscan.html',
                            animal_types=ANIMAL_TYPES,
                            breeds_by_animal=BREEDS_BY_ANIMAL,
                            all_symptoms=ALL_SYMPTOMS,
-                           meta=meta)
+                           meta=meta,
+                           num_classes=num_classes,
+                           total_samples=total_samples)
 
 
 @vetscan_bp.route('/predict', methods=['POST'])
