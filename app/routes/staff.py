@@ -12,6 +12,7 @@ from app.models.availability import DoctorAvailability
 from app.models.user import User
 from app.middleware.decorators import login_required, admin_required, staff_required, _get_current_user
 from app.services.push_service import send_push_notification
+from app.services.email_service import send_booking_email
 
 staff_bp = Blueprint('staff', __name__, url_prefix='/staff')
 
@@ -269,6 +270,10 @@ def update_booking_status(bid):
                 f"Booking {status.capitalize()}",
                 f"Your appointment for {booking.pet_name} ({booking.service_ref.name}) on {booking.date} is now {status}."
             )
+        
+        if status in ['confirmed', 'cancelled']:
+            send_booking_email(booking, status)
+
         flash(f'Booking #{bid} updated to {status}.', 'success')
 
     return redirect(request.referrer or url_for('dashboard.staff_dashboard'))
@@ -292,6 +297,8 @@ def cancel_booking(bid):
                 "Booking Cancelled",
                 f"Your booking for {booking.pet_name} on {booking.date} has been cancelled by staff."
             )
+        
+        send_booking_email(booking, 'cancelled')
         db.session.commit()
         flash(f'Booking #{bid} has been marked as cancelled.', 'success')
 

@@ -6,6 +6,7 @@ from app.models.booking import Booking
 from app.middleware.decorators import login_required, _get_current_user
 from app.services.booking_service import booked_slots_on, create_booking, ALL_SLOTS, PET_TYPES
 from app.utils.sanitize import clean_input
+from app.services.email_service import send_booking_email
 
 booking_bp = Blueprint('booking', __name__)
 
@@ -101,6 +102,7 @@ def cancel_booking(bid):
         return redirect(url_for('dashboard.client_dashboard'))
 
     booking.status = 'cancelled'
+    send_booking_email(booking, 'cancelled')
     db.session.commit()
     flash('Booking cancelled successfully.', 'success')
     return redirect(url_for('dashboard.client_dashboard'))
