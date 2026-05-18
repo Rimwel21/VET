@@ -123,18 +123,54 @@
     <footer class="footer">
       <div class="footer-container">
         <div class="footer-brand">
-          <h2 class="footer-logo">Join our<br /><span>Community</span></h2>
+          <h2 class="footer-logo">🐾 Join our<br /><span>Community</span></h2>
           <p>Get the scoop about events, promotions, and clinic updates.</p>
+          <form class="footer-subscribe" action="#" method="POST">
+            <input type="email" placeholder="Enter your Email" required />
+            <button type="submit" class="btn-submit">Submit</button>
+          </form>
+          <div class="footer-socials">
+            <a href="#" class="social-icon linkedin">in</a>
+            <a href="#" class="social-icon facebook">f</a>
+            <a href="#" class="social-icon twitter">𝕏</a>
+            <a href="#" class="social-icon instagram">📷</a>
+          </div>
         </div>
         <div class="footer-links">
+          <div class="footer-col">
+            <h4>Contact Us</h4>
+            <p>📞 (123) 456-7890</p>
+            <p>📧 hello@vetsync.com</p>
+            <p>📍 123 Vet Street, City</p>
+          </div>
           <div class="footer-col">
             <h4>Company</h4>
             <a href="{{ url_for('main.about') }}">About Us</a>
             <a href="{{ url_for('main.services_page') }}">Services</a>
+            <a href="#">FAQ</a>
           </div>
           <div class="footer-col">
-            <h4>Contact</h4>
-            <p>hello@vetsync.com</p>
+            <h4>Get Care</h4>
+            {% if current_user %}
+            <a href="{{ url_for('booking.booking_page') }}">Book Now</a>
+            {% else %}
+            <a href="{{ url_for('auth.login', next=url_for('booking.booking_page')) }}">Book Now</a>
+            {% endif %}
+            <a href="#">Emergency</a>
+            <a href="{{ url_for('main.contact') }}">Contact</a>
+          </div>
+        </div>
+        <div class="footer-phone">
+          <div class="phone-mockup">
+            <div class="phone-screen">
+              <div class="phone-app">
+                <div class="app-header">🐾 VetSync</div>
+                <div class="app-body">
+                  <div class="app-card">📅 Next Appt</div>
+                  <div class="app-card">🐶 My Pets</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
