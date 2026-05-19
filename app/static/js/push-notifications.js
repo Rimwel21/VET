@@ -49,11 +49,27 @@ function updatePushBellUI(enabled, unsupported = false) {
             staffBtn.textContent      = '⛔ Not Supported';
             staffBtn.style.background = '#94a3b8';
             staffBtn.style.cursor     = 'not-allowed';
-            return;
+            staffBtn.disabled         = true;
+        } else {
+            staffBtn.textContent      = enabled ? '🟢 Enabled' : '🔴 Disabled';
+            staffBtn.style.background = enabled ? '#16a34a' : '#dc2626';
+            staffBtn.disabled         = false;
         }
-        staffBtn.textContent      = enabled ? '🟢 Notifications ON' : '🔴 Notifications OFF';
-        staffBtn.style.background = enabled ? '#16a34a' : '#dc2626';
-        staffBtn.style.cursor     = 'pointer';
+    }
+
+    // ── Client profile toggle switch ──
+    const profileBtn = document.getElementById('profile-push-btn');
+    if (profileBtn) {
+        if (unsupported) {
+            profileBtn.innerHTML        = '⛔ Not Supported';
+            profileBtn.style.background = '#94a3b8';
+            profileBtn.style.cursor     = 'not-allowed';
+            profileBtn.disabled         = true;
+        } else {
+            profileBtn.innerHTML        = enabled ? '🟢 ON' : '🔴 OFF';
+            profileBtn.style.background = enabled ? '#16a34a' : '#dc2626';
+            profileBtn.disabled         = false;
+        }
     }
 }
 
