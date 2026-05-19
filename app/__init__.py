@@ -50,10 +50,10 @@ def _run_migrations():
     
     # List of migrations to try
     migrations = [
-        "ALTER TABLE bookings ADD COLUMN handled_by VARCHAR(100)",
-        "ALTER TABLE otp_verifications ADD COLUMN reset_token VARCHAR(255)",
-        "ALTER TABLE otp_verifications ADD COLUMN token_expires_at DATETIME",
-        "ALTER TABLE users ADD COLUMN push_enabled BOOLEAN DEFAULT TRUE",
+        "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS handled_by VARCHAR(100)",
+        "ALTER TABLE otp_verifications ADD COLUMN IF NOT EXISTS reset_token VARCHAR(255)",
+        "ALTER TABLE otp_verifications ADD COLUMN IF NOT EXISTS token_expires_at TIMESTAMP",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS push_enabled BOOLEAN DEFAULT TRUE",
         "CREATE TABLE IF NOT EXISTS audit_logs (id SERIAL PRIMARY KEY, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, user_id INTEGER REFERENCES users(id), user_name VARCHAR(100), action_type VARCHAR(50), description TEXT, ip_address VARCHAR(45))"
     ]
     
@@ -62,7 +62,9 @@ def _run_migrations():
             db.session.execute(text(m))
             db.session.commit()
         except Exception as e:
-            print(f"Migration error ({m}): {e}")
+            # Only print if it's not a duplicate column error to avoid noise
+            if "already exists" not in str(e).lower():
+                print(f"Migration error ({m}): {e}")
             db.session.rollback()
 
 
