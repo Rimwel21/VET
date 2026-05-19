@@ -527,4 +527,3 @@ document.addEventListener('submit', (event) => {
         }
     });
 });
-

@@ -80,6 +80,8 @@ async function syncSubscriptionWithServer(subscription) {
     }
 }
 
+let isPushToggling = false;
+
 async function initPushNotifications() {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
         updatePushBellUI(false, true);
@@ -106,37 +108,61 @@ async function initPushNotifications() {
             applicationServerKey: urlBase64ToUint8Array(public_key)
         });
         await syncSubscriptionWithServer(subscription);
+        if (typeof showInAppToast === 'function') {
+            showInAppToast('Notifications Enabled', 'You will now receive push alerts.', null);
+        }
     } catch (err) {
         // User denied or other error
         console.warn('[Push] Blocked or failed:', err.message);
         updatePushBellUI(false);
+        if (typeof showInAppToast === 'function') {
+            showInAppToast('Permission Denied', 'Please allow notifications in browser settings.', null);
+        }
     }
 }
 
 /** Called when user taps the bell or the staff sidebar button */
 async function togglePushNotifications() {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-    const reg      = await navigator.serviceWorker.ready;
-    const existing = await reg.pushManager.getSubscription();
-    if (existing) {
-        // Already on — offer to disable
-        if (confirm('Push notifications are enabled ✅\n\nTap OK to disable them on this device.')) {
-            try {
-                await fetch('/api/v1/push/unsubscribe', {
-                    method: 'POST',
-                    credentials: 'include',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf() },
-                    body: JSON.stringify({ endpoint: existing.endpoint })
-                });
-            } catch (err) {
-                console.error('[Push] Server unsubscribe error:', err);
+    if (isPushToggling) return;
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        if (typeof showInAppToast === 'function') showInAppToast('Not Supported', 'Push notifications are not supported on this browser.', null);
+        return;
+    }
+    
+    isPushToggling = true;
+    try {
+        const reg      = await navigator.serviceWorker.ready;
+        const existing = await reg.pushManager.getSubscription();
+        if (existing) {
+            // Already on — offer to disable
+            if (confirm('Push notifications are enabled ✅\n\nTap OK to disable them on this device.')) {
+                try {
+                    await fetch('/api/v1/push/unsubscribe', {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf() },
+                        body: JSON.stringify({ endpoint: existing.endpoint })
+                    });
+                } catch (err) {
+                    console.error('[Push] Server unsubscribe error:', err);
+                }
+                await existing.unsubscribe();
+                updatePushBellUI(false);
+                if (typeof showInAppToast === 'function') {
+                    showInAppToast('Notifications Disabled', 'You will no longer receive push alerts.', null);
+                }
             }
-            await existing.unsubscribe();
-            updatePushBellUI(false);
+        } else {
+            // Off — try to enable
+            await initPushNotifications();
         }
-    } else {
-        // Off — try to enable
-        await initPushNotifications();
+    } catch (err) {
+        console.error('[Push] Toggle error:', err);
+        if (typeof showInAppToast === 'function') {
+            showInAppToast('Error', 'Failed to update preference, please try again.', null);
+        }
+    } finally {
+        isPushToggling = false;
     }
 }
 

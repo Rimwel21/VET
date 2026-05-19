@@ -146,19 +146,8 @@ def predict_disease(form: dict) -> list:
     classes = model.classes_
 
     top_idx = np.argsort(proba)[::-1][:5]
-
-    # Extract the probabilities for the top predictions
-    top_probs = proba[top_idx]
-
-    # Normalize the top probabilities so their sum equals 1.0 (100%)
-    total_top_prob = np.sum(top_probs)
-    if total_top_prob > 0:
-        top_probs_normalized = top_probs / total_top_prob
-    else:
-        top_probs_normalized = top_probs
-
     results = []
-    for i, idx in enumerate(top_idx):
+    for idx in top_idx:
         class_val = classes[idx]
         # Safely resolve the disease name whether DISEASES is a list or dict,
         # and whether class_val is an int index or already a string label.
@@ -168,14 +157,14 @@ def predict_disease(form: dict) -> list:
             elif isinstance(class_val, str) and class_val in DISEASES:
                 disease = class_val
             else:
-                disease = str(class_val)  # fallback: use raw class value
+                disease = str(class_val)
         elif isinstance(DISEASES, dict):
             disease = DISEASES.get(str(class_val), str(class_val))
         else:
             disease = str(class_val)
 
-        conf = float(top_probs_normalized[i])
-        if conf < 0.001:
+        conf = float(proba[idx])
+        if conf < 0.01:
             break
         results.append({
             'disease':    disease,
@@ -184,15 +173,16 @@ def predict_disease(form: dict) -> list:
         })
 
     if not results:
-        # Absolute fallback — return the single top prediction
-        class_val = classes[top_idx[0]]
-        if isinstance(DISEASES, list) and isinstance(class_val, (int, np.integer)) and 0 <= int(class_val) < len(DISEASES):
-            disease = DISEASES[int(class_val)]
+        fallback_val = classes[top_idx[0]]
+        if isinstance(DISEASES, list) and isinstance(fallback_val, (int, np.integer)) and 0 <= int(fallback_val) < len(DISEASES):
+            fallback_disease = DISEASES[int(fallback_val)]
+        elif isinstance(DISEASES, dict):
+            fallback_disease = DISEASES.get(str(fallback_val), str(fallback_val))
         else:
-            disease = str(class_val)
+            fallback_disease = str(fallback_val)
         results.append({
-            'disease':    disease,
-            'confidence': round(float(top_probs[0]) * 100, 1),
+            'disease':    fallback_disease,
+            'confidence': round(float(proba[top_idx[0]]) * 100, 1),
             'severity':   'low',
         })
 
