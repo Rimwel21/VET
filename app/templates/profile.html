@@ -245,27 +245,48 @@
 </div>
 
 <script>
-  // Wire the profile push button to the shared updatePushBellUI
-  // so it gets updated on load alongside the header bell
-  (function patchProfilePushBtn() {
+  /**
+   * Profile page push notification toggle.
+   * Patches the shared updatePushBellUI from push-notifications.js
+   * to also update the profile-specific button.
+   * Uses window.addEventListener('load') to guarantee push-notifications.js
+   * has already defined updatePushBellUI before we patch it.
+   */
+  window.addEventListener('load', function() {
+    // ── 1. Patch updatePushBellUI so profile btn stays in sync ──────────────
     const originalUpdate = window.updatePushBellUI;
     window.updatePushBellUI = function(enabled, unsupported) {
-      // Call original (updates header bell + staff sidebar)
-      if (originalUpdate) originalUpdate(enabled, unsupported);
-      // Update profile toggle too
+      if (typeof originalUpdate === 'function') originalUpdate(enabled, unsupported);
       const btn = document.getElementById('profile-push-btn');
       if (!btn) return;
       if (unsupported) {
-        btn.textContent = '⛔ Not Supported';
+        btn.innerHTML  = '⛔ Not Supported';
         btn.style.background = '#94a3b8';
         btn.style.cursor = 'not-allowed';
         btn.disabled = true;
         return;
       }
-      btn.textContent = enabled ? '🟢 ON' : '🔴 OFF';
+      btn.innerHTML  = enabled ? '🟢 ON' : '🔴 OFF';
       btn.style.background = enabled ? '#16a34a' : '#dc2626';
       btn.disabled = false;
     };
-  })();
+
+    // ── 2. Set initial state from current browser subscription ──────────────
+    (async () => {
+      const btn = document.getElementById('profile-push-btn');
+      if (!btn) return;
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        window.updatePushBellUI(false, true);
+        return;
+      }
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        const sub = await reg.pushManager.getSubscription();
+        window.updatePushBellUI(!!sub, false);
+      } catch(e) {
+        window.updatePushBellUI(false, false);
+      }
+    })();
+  });
 </script>
 {% endblock %}

@@ -11,6 +11,8 @@ def get_robust_base():
         os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'ml', 'model'),
         '/home/ubuntu/vet/ml/model',
         '/home/ubuntu/VET/ml/model',
+        # EC2 app-relative path (app is inside /home/ubuntu/VET/)
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'ml', 'model'),
         os.path.abspath(os.path.join(os.getcwd(), 'ml', 'model')),
         os.path.abspath(os.path.join(os.getcwd(), '..', 'ml', 'model')),
     ]
@@ -18,6 +20,11 @@ def get_robust_base():
         path = os.path.abspath(path)
         if os.path.exists(os.path.join(path, 'metadata.json')):
             return path
+    # Log all paths tried so EC2 debugging is easy
+    import sys
+    print(f"[VetScan] WARNING: metadata.json not found in any path:", file=sys.stderr)
+    for p in possible_bases:
+        print(f"  tried: {os.path.abspath(p)}", file=sys.stderr)
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'ml', 'model')
 
 _BASE = get_robust_base()
@@ -139,25 +146,54 @@ def predict_disease(form: dict) -> list:
     classes = model.classes_
 
     top_idx = np.argsort(proba)[::-1][:5]
-    
+
     # Extract the probabilities for the top predictions
     top_probs = proba[top_idx]
-    
+
     # Normalize the top probabilities so their sum equals 1.0 (100%)
     total_top_prob = np.sum(top_probs)
     if total_top_prob > 0:
         top_probs_normalized = top_probs / total_top_prob
     else:
         top_probs_normalized = top_probs
-        
+
     results = []
     for i, idx in enumerate(top_idx):
-        disease = DISEASES[classes[idx]]
+        class_val = classes[idx]
+        # Safely resolve the disease name whether DISEASES is a list or dict,
+        # and whether class_val is an int index or already a string label.
+        if isinstance(DISEASES, list):
+            if isinstance(class_val, (int, np.integer)) and 0 <= int(class_val) < len(DISEASES):
+                disease = DISEASES[int(class_val)]
+            elif isinstance(class_val, str) and class_val in DISEASES:
+                disease = class_val
+            else:
+                disease = str(class_val)  # fallback: use raw class value
+        elif isinstance(DISEASES, dict):
+            disease = DISEASES.get(str(class_val), str(class_val))
+        else:
+            disease = str(class_val)
+
         conf = float(top_probs_normalized[i])
+        if conf < 0.001:
+            break
         results.append({
             'disease':    disease,
             'confidence': round(conf * 100, 1),
             'severity':   get_severity(disease),
+        })
+
+    if not results:
+        # Absolute fallback — return the single top prediction
+        class_val = classes[top_idx[0]]
+        if isinstance(DISEASES, list) and isinstance(class_val, (int, np.integer)) and 0 <= int(class_val) < len(DISEASES):
+            disease = DISEASES[int(class_val)]
+        else:
+            disease = str(class_val)
+        results.append({
+            'disease':    disease,
+            'confidence': round(float(top_probs[0]) * 100, 1),
+            'severity':   'low',
         })
 
     return results

@@ -434,58 +434,64 @@ function initPwaButtons() {
 
     if (buttons.length === 0) return;
 
-    // Check if already installed
+    // If already installed as a PWA — hide all install buttons
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
     if (isStandalone) {
         buttons.forEach(btn => btn.style.display = 'none');
         return;
     }
 
-    // Otherwise, ensure they are visible and styled consistently
+    // Always make install buttons visible (EC2 or any deployment)
     buttons.forEach(btn => {
         btn.style.display = 'inline-flex';
         btn.style.animation = 'fadeInUp 0.6s ease forwards';
-        
-        // Remove old click listeners if any, then wire up new one
+
+        // Clone to remove any old listeners, then wire fresh click handler
         const newBtn = btn.cloneNode(true);
         btn.parentNode.replaceChild(newBtn, btn);
-        
+
         newBtn.addEventListener('click', async (e) => {
             e.preventDefault();
             if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                console.log(`[PWA] Install outcome: ${outcome}`);
-                if (outcome === 'accepted') {
-                    buttons.forEach(b => b.style.display = 'none');
-                    deferredPrompt = null;
+                // Native browser install prompt available — use it
+                try {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log(`[PWA] Install outcome: ${outcome}`);
+                    if (outcome === 'accepted') {
+                        document.querySelectorAll('#pwaInstallBtn, #pwa-install-btn').forEach(b => b.style.display = 'none');
+                        deferredPrompt = null;
+                    }
+                } catch (err) {
+                    console.warn('[PWA] Prompt error, falling back to instructions:', err);
+                    showPwaInstallInstructions();
                 }
             } else {
+                // EC2 / HTTP / browser that doesn't fire beforeinstallprompt
+                // — always show the manual guide so users can still install
                 showPwaInstallInstructions();
             }
         });
     });
 }
 
-// Listen for native install prompt
+// Capture the native install prompt when the browser fires it
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
+    console.log('[PWA] beforeinstallprompt captured');
     initPwaButtons();
 });
 
-// Run check on load to show buttons if not already in standalone mode
+// Run on load — shows button immediately even if no native prompt yet
 window.addEventListener('load', () => {
     initPwaButtons();
 });
 
 window.addEventListener('appinstalled', () => {
     console.log('[PWA] Installed successfully!');
-    const buttons = [
-        document.getElementById('pwaInstallBtn'),
-        document.getElementById('pwa-install-btn')
-    ].filter(Boolean);
-    buttons.forEach(btn => btn.style.display = 'none');
+    document.querySelectorAll('#pwaInstallBtn, #pwa-install-btn').forEach(btn => btn.style.display = 'none');
+    deferredPrompt = null;
 });
 
 // Helper for animations if not already present

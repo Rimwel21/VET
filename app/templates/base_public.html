@@ -181,10 +181,25 @@
     {% endif %}
 
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/push-notifications.js') }}"></script>
     <script>
-      if ("serviceWorker" in navigator) {
-        window.addEventListener("load", () => {
-          navigator.serviceWorker.register("{{ url_for('main.service_worker') }}", { scope: "/" });
+      // Register Service Worker (required for PWA install + push notifications)
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register("{{ url_for('main.service_worker') }}", { scope: '/' })
+            .then(reg => {
+              console.log('[SW] Registered, scope:', reg.scope);
+            })
+            .catch(err => console.error('[SW] Registration failed:', err));
+
+          // Relay push messages to in-app toast if the function is available
+          navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'PUSH_NOTIFICATION') {
+              if (typeof showInAppToast === 'function') {
+                showInAppToast(event.data.title, event.data.body, event.data.url);
+              }
+            }
+          });
         });
       }
     </script>

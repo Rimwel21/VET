@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'vetsync-pwa-v10';
+const CACHE_VERSION = 'vetsync-pwa-v11';
 const APP_SHELL_CACHE = `${CACHE_VERSION}-shell`;
 const RUNTIME_CACHE = `${CACHE_VERSION}-runtime`;
 const DB_NAME = 'VetCareOfflineDB';
