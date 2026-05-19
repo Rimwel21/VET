@@ -3,10 +3,29 @@ from flask import current_app
 from pywebpush import webpush, WebPushException
 from app.models.notification import PushSubscription
 
-def send_push_notification(user_id, title, body, url="/dashboard"):
+def send_push_notification(user_id, title, body, url="/dashboard", persist=True):
     """
-    Sends a push notification to all devices registered by the user.
+    Sends a push notification to all registered subscriptions of the user if push is enabled.
+    Also optionally persists the notification in the database as a local in-app notification.
     """
+    from app.extensions import db
+    from app.models.notification import Notification
+
+    # Always persist as a local in-app notification first if requested
+    if persist:
+        try:
+            note = Notification(user_id=user_id, title=title, message=body)
+            db.session.add(note)
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Failed to persist in-app notification: {e}")
+
+    from app.models.user import User
+    user = User.query.get(user_id)
+    if not user or not user.push_enabled:
+        return False
+
     subscriptions = PushSubscription.query.filter_by(user_id=user_id).all()
     if not subscriptions:
         return False

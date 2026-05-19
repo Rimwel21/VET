@@ -424,30 +424,6 @@
         if (e.target === modal) closeContactModal();
       });
 
-      // ── PWA Install ──
-      let _pwaPrompt = null;
-      window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        _pwaPrompt = e;
-        const btn = document.getElementById('pwa-install-btn');
-        if (btn) btn.style.display = 'flex';
-      });
-
-      document.getElementById('pwa-install-btn')?.addEventListener('click', async () => {
-        if (!_pwaPrompt) return;
-        _pwaPrompt.prompt();
-        const { outcome } = await _pwaPrompt.userChoice;
-        if (outcome === 'accepted') {
-          document.getElementById('pwa-install-btn').style.display = 'none';
-          _pwaPrompt = null;
-        }
-      });
-
-      window.addEventListener('appinstalled', () => {
-        const btn = document.getElementById('pwa-install-btn');
-        if (btn) btn.style.display = 'none';
-        _pwaPrompt = null;
-      });
     </script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
     <script src="{{ url_for('static', filename='js/push-notifications.js') }}"></script>

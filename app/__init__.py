@@ -34,11 +34,11 @@ def create_app(config_name='default'):
         current_user = db.session.get(User, uid) if uid else None
         return dict(current_user=current_user, csrf_token=generate_csrf_token)
 
-    # Local bootstrap guard. Production deployments should use Flask-Migrate.
-    if app.config.get('AUTO_CREATE_DB'):
-        with app.app_context():
+    # Run dynamic schema migrations on application startup
+    with app.app_context():
+        _run_migrations()
+        if app.config.get('AUTO_CREATE_DB'):
             db.create_all()
-            _run_migrations()
             _seed_data()
     return app
 
@@ -53,6 +53,7 @@ def _run_migrations():
         "ALTER TABLE bookings ADD COLUMN handled_by VARCHAR(100)",
         "ALTER TABLE otp_verifications ADD COLUMN reset_token VARCHAR(255)",
         "ALTER TABLE otp_verifications ADD COLUMN token_expires_at DATETIME",
+        "ALTER TABLE users ADD COLUMN push_enabled BOOLEAN DEFAULT TRUE",
         "CREATE TABLE IF NOT EXISTS audit_logs (id SERIAL PRIMARY KEY, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, user_id INTEGER REFERENCES users(id), user_name VARCHAR(100), action_type VARCHAR(50), description TEXT, ip_address VARCHAR(45))"
     ]
     

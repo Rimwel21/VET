@@ -14,6 +14,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(256), nullable=False)
     role          = db.Column(db.String(20),  default='client')  # client, staff, admin
     is_active     = db.Column(db.Boolean,     default=True)
+    push_enabled  = db.Column(db.Boolean,     default=True, server_default='1')
     created_at    = db.Column(db.DateTime,    default=datetime.utcnow)
 
     bookings      = db.relationship('Booking',      backref='user', lazy=True)

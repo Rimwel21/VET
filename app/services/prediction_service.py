@@ -6,16 +6,33 @@ import joblib
 # ---------------------------------------------------------------------------
 # Load small metadata at import time; load the large model lazily on prediction.
 # ---------------------------------------------------------------------------
-_BASE = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'ml', 'model')
+def get_robust_base():
+    possible_bases = [
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'ml', 'model'),
+        '/home/ubuntu/vet/ml/model',
+        '/home/ubuntu/VET/ml/model',
+        os.path.abspath(os.path.join(os.getcwd(), 'ml', 'model')),
+        os.path.abspath(os.path.join(os.getcwd(), '..', 'ml', 'model')),
+    ]
+    for path in possible_bases:
+        path = os.path.abspath(path)
+        if os.path.exists(os.path.join(path, 'metadata.json')):
+            return path
+    return os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'ml', 'model')
 
-with open(os.path.join(_BASE, 'metadata.json')) as f:
-    meta = json.load(f)
+_BASE = get_robust_base()
 
-FEATURE_COLS     = meta['feature_cols']
-ANIMAL_TYPES     = meta['animal_types']
-BREEDS_BY_ANIMAL = meta['breeds_by_animal']
-ALL_SYMPTOMS     = meta['all_symptoms']
-DISEASES         = meta['diseases']
+try:
+    with open(os.path.join(_BASE, 'metadata.json')) as f:
+        meta = json.load(f)
+except Exception:
+    meta = {}
+
+FEATURE_COLS     = meta.get('feature_cols', [])
+ANIMAL_TYPES     = meta.get('animal_types', ['Dog', 'Cat'])
+BREEDS_BY_ANIMAL = meta.get('breeds_by_animal', {})
+ALL_SYMPTOMS     = meta.get('all_symptoms', [])
+DISEASES         = meta.get('diseases', [])
 
 _model = None
 _encoders = None
@@ -24,10 +41,19 @@ _encoders = None
 def _load_assets():
     global _model, _encoders
     if _model is None or _encoders is None:
-        _model = joblib.load(os.path.join(_BASE, 'disease_model.pkl'))
+        model_path = os.path.join(_BASE, 'disease_model.pkl')
+        encoders_path = os.path.join(_BASE, 'encoders.pkl')
+        
+        if not os.path.exists(model_path) or not os.path.exists(encoders_path):
+            raise FileNotFoundError(
+                "The ML disease model files (disease_model.pkl or encoders.pkl) are currently unavailable "
+                "on this server instance. Please upload them to the ml/model/ directory."
+            )
+            
+        _model = joblib.load(model_path)
         if hasattr(_model, 'n_jobs'):
             _model.n_jobs = 1
-        _encoders = joblib.load(os.path.join(_BASE, 'encoders.pkl'))
+        _encoders = joblib.load(encoders_path)
     return _model, _encoders
 
 # ---------------------------------------------------------------------------

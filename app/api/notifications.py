@@ -38,5 +38,5 @@ def notifications(current_user_jwt):
     note = Notification(user_id=uid, title=title, message=message)
     db.session.add(note)
     db.session.commit()
-    send_push_notification(uid, title, message)
+    send_push_notification(uid, title, message, persist=False)
     return jsonify({'message': 'Notification sent successfully', 'notification_id': note.id}), 201

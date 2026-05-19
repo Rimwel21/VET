@@ -271,45 +271,221 @@ if (navigator.onLine) {
 }
 
 // ===================== PWA INSTALLATION =====================
-let deferredPrompt;
-const installBtn = document.getElementById('pwaInstallBtn');
+let deferredPrompt = null;
 
-window.addEventListener('beforeinstallprompt', (e) => {
-    // Prevent the mini-infobar from appearing on mobile
-    e.preventDefault();
-    // Stash the event so it can be triggered later.
-    deferredPrompt = e;
-    // Update UI notify the user they can install the PWA
-    if (installBtn) {
-        installBtn.style.display = 'flex';
-        // Add a subtle entrance animation
-        installBtn.style.animation = 'fadeInUp 0.6s ease forwards';
+function showPwaInstallInstructions() {
+    // Remove existing if any
+    document.getElementById('pwa-install-modal')?.remove();
+
+    const ua = navigator.userAgent.toLowerCase();
+    const isiOS = /iphone|ipad|ipod/.test(ua);
+    const isAndroid = /android/.test(ua);
+
+    let instructionsHtml = '';
+    if (isiOS) {
+        instructionsHtml = `
+            <div class="pwa-instruction-step">
+                <span class="step-icon">📤</span>
+                <p>Tap the <strong>Share</strong> button in the Safari toolbar (at the bottom or top of your screen).</p>
+            </div>
+            <div class="pwa-instruction-step">
+                <span class="step-icon">➕</span>
+                <p>Scroll down the options list and select <strong>Add to Home Screen</strong>.</p>
+            </div>
+            <div class="pwa-instruction-step">
+                <span class="step-icon">✨</span>
+                <p>Tap <strong>Add</strong> in the top-right corner to complete the installation.</p>
+            </div>
+        `;
+    } else if (isAndroid) {
+        instructionsHtml = `
+            <div class="pwa-instruction-step">
+                <span class="step-icon">⋮</span>
+                <p>Tap the menu icon (three dots) in the top-right corner of Chrome/Edge.</p>
+            </div>
+            <div class="pwa-instruction-step">
+                <span class="step-icon">📲</span>
+                <p>Select <strong>Install app</strong> or <strong>Add to Home screen</strong> from the list.</p>
+            </div>
+        `;
+    } else {
+        instructionsHtml = `
+            <div class="pwa-instruction-step">
+                <span class="step-icon">💻</span>
+                <p>Click the <strong>Install Icon</strong> (desktop monitor with down arrow) on the right side of your browser's address bar.</p>
+            </div>
+            <div class="pwa-instruction-step">
+                <span class="step-icon">⚙️</span>
+                <p>Or open the browser menu (⋮ or •••) and select <strong>Save and share</strong> -> <strong>Install VetSync</strong>.</p>
+            </div>
+        `;
     }
-});
 
-if (installBtn) {
-    installBtn.addEventListener('click', async () => {
-        if (!deferredPrompt) return;
-        // Show the install prompt
-        deferredPrompt.prompt();
-        // Wait for the user to respond to the prompt
-        const { outcome } = await deferredPrompt.userChoice;
-        // Optionally, send analytics event with outcome of user choice
-        console.log(`User response to the install prompt: ${outcome}`);
-        // We've used the prompt, and can't use it again, throw it away
-        deferredPrompt = null;
-        // Hide the install button
-        installBtn.style.display = 'none';
+    const modal = document.createElement('div');
+    modal.id = 'pwa-install-modal';
+    modal.style.cssText = `
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(8px);
+        z-index: 99999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    `;
+
+    modal.innerHTML = `
+        <div class="pwa-modal-card" style="
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            max-width: 480px;
+            width: 100%;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+            border: 1.5px solid #dde8ff;
+            position: relative;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+        ">
+            <button onclick="document.getElementById('pwa-install-modal').style.opacity = '0'; setTimeout(() => document.getElementById('pwa-install-modal').remove(), 300)" style="
+                position: absolute;
+                top: 16px;
+                right: 16px;
+                background: #f1f5f9;
+                border: none;
+                font-size: 18px;
+                cursor: pointer;
+                color: #64748b;
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: background 0.2s;
+            ">✕</button>
+            <div style="text-align: center; margin-bottom: 24px;">
+                <span style="font-size: 3rem;">🐾</span>
+                <h3 style="color: #1a3c8f; font-family: 'Nunito', sans-serif; font-size: 1.5rem; font-weight: 800; margin: 12px 0 6px;">Install VetSync App</h3>
+                <p style="color: #64748b; font-size: 0.88rem; margin: 0;">Add VetSync to your home screen or desktop for a fast, full-screen offline experience.</p>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px;">
+                ${instructionsHtml}
+            </div>
+            <button onclick="document.getElementById('pwa-install-modal').style.opacity = '0'; setTimeout(() => document.getElementById('pwa-install-modal').remove(), 300)" style="
+                width: 100%;
+                padding: 13px;
+                background: #1a3c8f;
+                color: white;
+                border: none;
+                border-radius: 12px;
+                font-weight: 700;
+                font-size: 0.95rem;
+                cursor: pointer;
+                box-shadow: 0 4px 12px rgba(26,60,143,0.2);
+            ">Got it, thanks!</button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    if (!document.getElementById('pwa-modal-styles')) {
+        const style = document.createElement('style');
+        style.id = 'pwa-modal-styles';
+        style.innerHTML = `
+            .pwa-instruction-step {
+                display: flex;
+                align-items: center;
+                gap: 16px;
+                background: #f8fafc;
+                padding: 12px 16px;
+                border-radius: 12px;
+                border: 1.5px solid #dde8ff;
+                text-align: left;
+            }
+            .pwa-instruction-step .step-icon {
+                font-size: 1.5rem;
+                flex-shrink: 0;
+            }
+            .pwa-instruction-step p {
+                margin: 0;
+                color: #334155;
+                font-size: 0.88rem;
+                line-height: 1.4;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    setTimeout(() => {
+        modal.style.opacity = '1';
+        modal.querySelector('.pwa-modal-card').style.transform = 'translateY(0)';
+    }, 50);
+}
+
+function initPwaButtons() {
+    const buttons = [
+        document.getElementById('pwaInstallBtn'),
+        document.getElementById('pwa-install-btn')
+    ].filter(Boolean);
+
+    if (buttons.length === 0) return;
+
+    // Check if already installed
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+    if (isStandalone) {
+        buttons.forEach(btn => btn.style.display = 'none');
+        return;
+    }
+
+    // Otherwise, ensure they are visible and styled consistently
+    buttons.forEach(btn => {
+        btn.style.display = 'inline-flex';
+        btn.style.animation = 'fadeInUp 0.6s ease forwards';
+        
+        // Remove old click listeners if any, then wire up new one
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        
+        newBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`[PWA] Install outcome: ${outcome}`);
+                if (outcome === 'accepted') {
+                    buttons.forEach(b => b.style.display = 'none');
+                    deferredPrompt = null;
+                }
+            } else {
+                showPwaInstallInstructions();
+            }
+        });
     });
 }
 
-window.addEventListener('appinstalled', (event) => {
-    // Log install to analytics
-    console.log('INSTALL: Success');
-    // Hide the install button
-    if (installBtn) {
-        installBtn.style.display = 'none';
-    }
+// Listen for native install prompt
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    initPwaButtons();
+});
+
+// Run check on load to show buttons if not already in standalone mode
+window.addEventListener('load', () => {
+    initPwaButtons();
+});
+
+window.addEventListener('appinstalled', () => {
+    console.log('[PWA] Installed successfully!');
+    const buttons = [
+        document.getElementById('pwaInstallBtn'),
+        document.getElementById('pwa-install-btn')
+    ].filter(Boolean);
+    buttons.forEach(btn => btn.style.display = 'none');
 });
 
 // Helper for animations if not already present
@@ -324,4 +500,25 @@ if (!document.getElementById('pwa-anim-styles')) {
     `;
     document.head.appendChild(style);
 }
+
+// ===================== FORM DOUBLE-SUBMISSION PREVENTION =====================
+document.addEventListener('submit', (event) => {
+    const form = event.target;
+    if (event.defaultPrevented) return;
+
+    if (form.dataset.submitted === 'true') {
+        event.preventDefault();
+        return;
+    }
+
+    form.dataset.submitted = 'true';
+    const buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+    buttons.forEach((btn) => {
+        btn.disabled = true;
+        if (btn.tagName === 'BUTTON') {
+            btn.dataset.originalText = btn.innerHTML;
+            btn.innerHTML = '⏳ Processing...';
+        }
+    });
+});
 

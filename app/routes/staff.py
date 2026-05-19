@@ -256,6 +256,8 @@ def update_booking_status(bid):
     booking = db.session.get(Booking, bid)
     if not booking:
         flash('Booking not found.', 'error')
+    elif booking.status == status:
+        flash(f'Booking #{bid} is already {status}.', 'info')
     else:
         booking.status = status
         user = _get_current_user()

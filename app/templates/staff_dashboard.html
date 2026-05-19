@@ -1004,9 +1004,18 @@
         document.getElementById('dayDetailModal').classList.add('active');
     }
 
+    let isTransitioningStatus = false;
+
     async function updateApptStatus(id, newStatus, currentDateStr) {
+        if (isTransitioningStatus) return;
         if(!confirm(`Mark this appointment as ${newStatus}?`)) return;
         
+        isTransitioningStatus = true;
+        const list = document.getElementById('dayAppointmentsList');
+        if (list) {
+            list.querySelectorAll('.action-btn').forEach(btn => btn.disabled = true);
+        }
+
         try {
             const formData = new FormData();
             formData.append('status', newStatus);
@@ -1028,12 +1037,30 @@
                 setTimeout(() => { location.reload(); }, 800); // Slight delay for UX
             } else {
                 alert("Operation failed.");
+                isTransitioningStatus = false;
+                if (list) {
+                    list.querySelectorAll('.action-btn').forEach(btn => btn.disabled = false);
+                }
             }
-        } catch (e) { alert("Connection Error."); }
+        } catch (e) { 
+            alert("Connection Error."); 
+            isTransitioningStatus = false;
+            if (list) {
+                list.querySelectorAll('.action-btn').forEach(btn => btn.disabled = false);
+            }
+        }
     }
 
     async function cancelApptFromCalendar(id, currentDateStr) {
+        if (isTransitioningStatus) return;
         if(!confirm("Mark this appointment as cancelled?")) return;
+        
+        isTransitioningStatus = true;
+        const list = document.getElementById('dayAppointmentsList');
+        if (list) {
+            list.querySelectorAll('.action-btn').forEach(btn => btn.disabled = true);
+        }
+
         try {
             const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
             const formData = new FormData();
@@ -1047,13 +1074,30 @@
                 setTimeout(() => { location.reload(); }, 800);
             } else {
                 alert("Cancellation failed.");
+                isTransitioningStatus = false;
+                if (list) {
+                    list.querySelectorAll('.action-btn').forEach(btn => btn.disabled = false);
+                }
             }
-        } catch (e) { alert("Network error."); }
+        } catch (e) { 
+            alert("Network error."); 
+            isTransitioningStatus = false;
+            if (list) {
+                list.querySelectorAll('.action-btn').forEach(btn => btn.disabled = false);
+            }
+        }
     }
 
     async function deleteApptFromCalendar(id, currentDateStr) {
+        if (isTransitioningStatus) return;
         if(!confirm("PERMANENTLY DELETE this record? This cannot be undone.")) return;
         
+        isTransitioningStatus = true;
+        const list = document.getElementById('dayAppointmentsList');
+        if (list) {
+            list.querySelectorAll('.action-btn').forEach(btn => btn.disabled = true);
+        }
+
         try {
             const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
             const formData = new FormData();
@@ -1074,8 +1118,18 @@
                 setTimeout(() => { location.reload(); }, 800);
             } else {
                 alert("Core server error during deletion.");
+                isTransitioningStatus = false;
+                if (list) {
+                    list.querySelectorAll('.action-btn').forEach(btn => btn.disabled = false);
+                }
             }
-        } catch (e) { alert("Network error."); }
+        } catch (e) { 
+            alert("Network error."); 
+            isTransitioningStatus = false;
+            if (list) {
+                list.querySelectorAll('.action-btn').forEach(btn => btn.disabled = false);
+            }
+        }
     }
 
     function formatDate(date) {

@@ -121,6 +121,16 @@ async function togglePushNotifications() {
     if (existing) {
         // Already on — offer to disable
         if (confirm('Push notifications are enabled ✅\n\nTap OK to disable them on this device.')) {
+            try {
+                await fetch('/api/v1/push/unsubscribe', {
+                    method: 'POST',
+                    credentials: 'include',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf() },
+                    body: JSON.stringify({ endpoint: existing.endpoint })
+                });
+            } catch (err) {
+                console.error('[Push] Server unsubscribe error:', err);
+            }
             await existing.unsubscribe();
             updatePushBellUI(false);
         }

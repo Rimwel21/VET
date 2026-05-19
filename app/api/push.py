@@ -34,6 +34,9 @@ def subscribe_push():
             auth     = data['keys']['auth']
         ))
 
+    # Save preference to user model
+    user.push_enabled = True
+
     db.session.commit()
     return jsonify({'message': 'Subscribed successfully'}), 201
 
@@ -51,7 +54,9 @@ def unsubscribe_push():
     existing = PushSubscription.query.filter_by(endpoint=data['endpoint']).first()
     if existing:
         db.session.delete(existing)
-        db.session.commit()
-        return jsonify({'message': 'Unsubscribed successfully'}), 200
-
-    return jsonify({'message': 'No subscription found'}), 200
+        
+    # Disable push for the user
+    user.push_enabled = False
+    
+    db.session.commit()
+    return jsonify({'message': 'Unsubscribed successfully'}), 200

@@ -26,8 +26,13 @@ def predict():
         data    = request.get_json()
         results = predict_disease(data)
         return jsonify({'success': True, 'predictions': results})
+    except FileNotFoundError as e:
+        return jsonify({
+            'success': False,
+            'error': "The VetScan prediction engine model is currently undergoing maintenance or is not deployed on this instance. Please try again shortly."
+        }), 503
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
+        return jsonify({'success': False, 'error': f"Prediction failed: {str(e)}"}), 500
 
 
 @vetscan_bp.route('/breeds/<animal_type>')
