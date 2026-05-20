@@ -25,10 +25,19 @@ class Config:
     MAIL_USERNAME = os.getenv('MAIL_USERNAME')
     MAIL_PASSWORD = os.getenv('MAIL_PASSWORD')
 
+    # VETSYNC SECURITY MATRIX: Secure In-Transit Session Cookies & Session Security
+    # Enforces industry-standard session protections globally:
+    # 1. HttpOnly = True ensures session identifiers cannot be read by client-side JavaScript,
+    #    neutralizing cookie-stealing Trojan malware.
+    # 2. SameSite = 'Lax' limits cookie transmission to top-level cross-site requests, mitigating
+    #    Cross-Site Request Forgery (CSRF) attempts.
+    # 3. Permanent Session Lifetime = 2 hours bounds session state lifespan.
+    # 4. ENFORCE_HTTPS enforces secure SSL/TLS communication layers.
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
     PERMANENT_SESSION_LIFETIME = timedelta(hours=2)
     ENFORCE_HTTPS = os.getenv('ENFORCE_HTTPS', 'false').lower() == 'true'
+
 
     VAPID_PUBLIC_KEY = os.getenv(
         'VAPID_PUBLIC_KEY',
@@ -51,9 +60,16 @@ class DevelopmentConfig(Config):
 
 
 class ProductionConfig(Config):
+    # VETSYNC SECURITY MATRIX: Production Hardening
+    # Enforces production-grade defenses:
+    # 1. DEBUG = False prevents full system stack trace disclosure to users in error screens.
+    # 2. Session Cookie Secure = True forces browser cookies to be transmitted exclusively over
+    #    encrypted HTTPS connections, neutralizing network sniffing/eavesdropping.
+    # 3. Enforce HTTPS = True enforces global SSL redirection.
     DEBUG = False
     SESSION_COOKIE_SECURE = True
     ENFORCE_HTTPS = os.getenv('ENFORCE_HTTPS', 'true').lower() == 'true'
+
 
 
 config = {

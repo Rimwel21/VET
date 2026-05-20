@@ -20,6 +20,10 @@ def login_required(f):
     return decorated
 
 
+# VETSYNC SECURITY MATRIX: Role-Based Access Control (RBAC)
+# Intercepts standard HTTP web requests and checks the current user session.
+# If the user is unauthenticated or lacks the required role ('admin' or 'staff'),
+# they are immediately blocked and redirected to the public index with an access error.
 def admin_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -42,6 +46,9 @@ def staff_required(f):
     return decorated
 
 
+# VETSYNC SECURITY MATRIX: JWT Token Validation Middleware
+# Secures API endpoints against unauthorized programmatic requests by requiring and 
+# validating a dynamically decoded, short-lived JSON Web Token (Bearer token).
 def jwt_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
@@ -62,6 +69,9 @@ def jwt_required(f):
     return decorated
 
 
+# VETSYNC SECURITY MATRIX: Unified RBAC & JWT Hybrid Protection
+# Handles both web-based session requests and token-based programmatic REST API 
+# requests, verifying credentials and role permissions before allowing access.
 def role_required(roles):
     def decorator(f):
         @wraps(f)
@@ -90,6 +100,7 @@ def role_required(roles):
             return f(user, *args, **kwargs)
         return decorated
     return decorator
+
 
 
 def _extract_bearer_token():

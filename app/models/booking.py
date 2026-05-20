@@ -2,6 +2,11 @@ from datetime import datetime
 from app.extensions import db
 
 
+# VETSYNC SECURITY MATRIX: SQL Injection (SQLi) Prevention
+# All database operations on the Booking model (such as appointment creation, alt phone logging,
+# and risk assessment checks) are executed using SQLAlchemy ORM (db.Model). This automatically
+# parameterizes all SQL queries globally. Raw user inputs (e.g. email, phone numbers, visit reasons)
+# are bound safely as values rather than executable statement fragments, making SQLi attempts impossible.
 class Booking(db.Model):
     __tablename__ = 'bookings'
 

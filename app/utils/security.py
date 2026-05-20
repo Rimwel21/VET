@@ -4,12 +4,21 @@ import os
 # pyrefly: ignore [missing-import]
 from flask import session, current_app, request, abort
 
+# VETSYNC SECURITY MATRIX: Cross-Site Request Forgery (CSRF) Shield
+# Generates a unique, cryptographically secure 32-byte session token for each user session.
+# This token is injected into template forms and headers to prevent unauthorized cross-site requests.
 def generate_csrf_token():
     """Generates a CSRF token for the current session if one doesn't exist."""
     if '_csrf_token' not in session:
         session['_csrf_token'] = os.urandom(32).hex()
     return session['_csrf_token']
 
+
+# VETSYNC SECURITY MATRIX: Cross-Site Request Forgery (CSRF) Shield (Verification)
+# Intercepts state-changing HTTP requests (POST, PUT, PATCH, DELETE) and validates
+# the incoming 'csrf_token' (from forms) or 'X-CSRF-Token' header (for AJAX/PWA requests)
+# against the cryptographically stored session token using constant-time comparison (hmac.compare_digest).
+# This prevents timing attacks and completely blocks unauthorized cross-site state changes.
 def verify_csrf_token():
     """Verifies the CSRF token in the request against the session token."""
     if request.method not in ["POST", "PUT", "PATCH", "DELETE"]:
@@ -34,3 +43,4 @@ def verify_csrf_token():
             current_app.logger.debug(f"Headers: {dict(request.headers)}")
         
         abort(403, description="CSRF validation failed. Request denied.")
+

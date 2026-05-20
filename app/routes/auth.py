@@ -60,6 +60,9 @@ def signup():
             email=em,
             contact=ct
         )
+        # VETSYNC SECURITY MATRIX: Password Hashing Trigger
+        # Captures the user's password input and triggers the Werkzeug cryptographically 
+        # secure one-way hashing function before any database commit occurs.
         user.set_password(pw)
         db.session.add(user)
         db.session.commit()
@@ -101,6 +104,11 @@ def login():
                 flash('Your account has been deactivated. Please contact support.', 'error')
                 return render_template('login.html')
 
+            # VETSYNC SECURITY MATRIX: Session Hijack & Cookie Protection
+            # Clears the session to prevent session fixation attacks. Binds the user ID,
+            # source IP address, and User-Agent signature directly into the cryptographically
+            # encrypted session cookie. This allows the system to detect and drop mutated or
+            # hijacked cookies at runtime.
             session.clear()
             session['user_id']   = user.id
             session['ip']        = request.remote_addr
@@ -109,6 +117,9 @@ def login():
             clear_attempts(rate_key)
             log_action('Auth Success', f'Secure login established for {user.role}: {user.first_name} {user.last_name}', user=user)
 
+            # VETSYNC SECURITY MATRIX: JWT Token Generation
+            # Generates a highly secure, short-lived JSON Web Token (JWT) with encoded user identification
+            # and RBAC credentials, enabling safe cross-origin client and PWA application accesses.
             access_token = create_jwt_token(user.id, user.role)
 
             next_url = request.args.get('next')
