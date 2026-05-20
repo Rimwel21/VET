@@ -37,6 +37,19 @@ def send_push_notification(user_id, title, body, url="/dashboard", persist=True)
         current_app.logger.error("VAPID_PRIVATE_KEY not configured")
         return False
 
+    # VETSYNC SECURITY MATRIX: Raw VAPID Private Key Auto-Conversion
+    # If the configured private key is a raw 43-character base64 URL-safe key,
+    # we convert it to standard PEM format. This resolves pywebpush's internal
+    # Python 3 concatenation bug that triggers a TypeError in from_raw().
+    if "-----BEGIN PRIVATE KEY-----" not in vapid_private_key:
+        try:
+            from py_vapid import Vapid
+            # Force conversion as bytes to avoid Python 3 type error inside py-vapid
+            vapid_obj = Vapid.from_raw(vapid_private_key.encode('utf-8'))
+            vapid_private_key = vapid_obj.private_pem().decode('utf-8')
+        except Exception as e:
+            current_app.logger.error(f"Failed to auto-convert VAPID private key to PEM: {e}")
+
     payload = json.dumps({
         "title": title,
         "body": body,

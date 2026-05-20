@@ -445,7 +445,15 @@
                 },
                 body: JSON.stringify({ user_id: userId, title: title, message: message })
             });
-            const data = await res.json();
+            
+            let data;
+            try {
+                data = await res.json();
+            } catch (jsonErr) {
+                const text = await res.text();
+                throw new Error(text.substring(0, 100) || `Server returned status ${res.status}`);
+            }
+
             if (res.ok) {
                 statusEl.textContent = '✅ Notification sent successfully!';
                 statusEl.style.color = '#10b981';
@@ -457,7 +465,8 @@
                 statusEl.style.color = '#DC2626';
             }
         } catch(e) {
-            statusEl.textContent = '❌ Network error.';
+            console.error('[Push Notification Error]', e);
+            statusEl.textContent = '❌ ' + (e.message.includes('<!DOCTYPE') || e.message.includes('<html') ? 'Server internal error.' : e.message || 'Network error.');
             statusEl.style.color = '#DC2626';
         } finally {
             statusEl.style.display = 'block';
