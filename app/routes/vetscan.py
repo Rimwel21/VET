@@ -30,9 +30,9 @@ def predict():
         return jsonify({
             'success': False,
             'error': "The VetScan prediction engine model is currently undergoing maintenance or is not deployed on this instance. Please try again shortly."
-        }), 503
+        }), 200
     except Exception as e:
-        return jsonify({'success': False, 'error': f"Prediction failed: {str(e)}"}), 500
+        return jsonify({'success': False, 'error': f"Prediction failed: {str(e)}"}), 200
 
 
 @vetscan_bp.route('/breeds/<animal_type>')
