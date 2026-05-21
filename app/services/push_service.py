@@ -1,3 +1,15 @@
+import inspect
+try:
+    import cryptography.hazmat.primitives.asymmetric.ec as ec
+    _orig_generate_private_key = ec.generate_private_key
+    def _patched_generate_private_key(curve, backend=None):
+        if inspect.isclass(curve) and issubclass(curve, ec.EllipticCurve):
+            curve = curve()
+        return _orig_generate_private_key(curve, backend)
+    ec.generate_private_key = _patched_generate_private_key
+except Exception:
+    pass
+
 import json
 from flask import current_app
 from pywebpush import webpush, WebPushException
@@ -149,6 +161,13 @@ def send_push_notification(user_id, title, body, url="/dashboard", persist=True)
                     db.session.delete(sub)
                     db.session.commit()
                     current_app.logger.info(f"[PushService] Removed expired subscription id={sub.id}.")
+                    
+                    # If this was the last subscription, automatically disable push_enabled to keep DB in sync
+                    remaining = PushSubscription.query.filter_by(user_id=user_id).count()
+                    if remaining == 0:
+                        user.push_enabled = False
+                        db.session.commit()
+                        current_app.logger.info(f"[PushService] Auto-disabled push_enabled for user {user_id} due to no remaining subscriptions.")
                 except Exception as del_err:
                     db.session.rollback()
                     current_app.logger.error(f"[PushService] Failed to delete sub id={sub.id}: {del_err}")

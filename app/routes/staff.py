@@ -191,11 +191,20 @@ def send_custom_push():
         if not target or target.role != 'client':
             return jsonify({'error': 'Client not found.'}), 404
 
+        # Precise diagnostics for user subscription state
+        if not target.push_enabled:
+            return jsonify({'error': 'Notification could not be sent — client has disabled notifications in their settings.'}), 422
+
+        from app.models.notification import PushSubscription
+        sub_exists = PushSubscription.query.filter_by(user_id=target.id).first()
+        if not sub_exists:
+            return jsonify({'error': 'Notification could not be sent — client subscription invalid or not registered in this browser.'}), 422
+
         sent = send_push_notification(int(user_id), title, message)
         if sent:
             return jsonify({'message': f'Notification sent successfully to {target.first_name} {target.last_name}.'}), 200
         else:
-            return jsonify({'error': 'Client has no active push subscription. They must enable notifications in their browser first.'}), 422
+            return jsonify({'error': 'Notification could not be sent — client subscription invalid.'}), 422
 
     except ValueError:
         return jsonify({'error': 'Invalid user ID format.'}), 400

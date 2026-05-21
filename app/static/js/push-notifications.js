@@ -96,6 +96,15 @@ async function syncSubscriptionWithServer(subscription) {
     }
 }
 
+function uint8ArraysEqual(a, b) {
+    if (!a || !b) return false;
+    if (a.byteLength !== b.byteLength) return false;
+    for (let i = 0; i < a.byteLength; i++) {
+        if (a[i] !== b[i]) return false;
+    }
+    return true;
+}
+
 let isPushToggling = false;
 
 async function initPushNotifications() {
@@ -107,28 +116,39 @@ async function initPushNotifications() {
         const reg          = await navigator.serviceWorker.ready;
         let   subscription = await reg.pushManager.getSubscription();
 
-        if (subscription) {
-            // Already subscribed — update UI and re-sync
-            updatePushBellUI(true);
-            await syncSubscriptionWithServer(subscription);
-            return;
-        }
-
-        // Not yet subscribed — request permission & subscribe
+        // Always fetch current VAPID public key
         const res = await fetch(PUSH_VAPID_URL, { credentials: 'include' });
         if (!res.ok) { updatePushBellUI(false); return; }
         const { public_key } = await res.json();
+        const serverKeyUint8 = urlBase64ToUint8Array(public_key);
 
+        if (subscription) {
+            const subKeyUint8 = subscription.options.applicationServerKey
+                ? new Uint8Array(subscription.options.applicationServerKey)
+                : null;
+
+            if (uint8ArraysEqual(subKeyUint8, serverKeyUint8)) {
+                // VAPID keys match! Already subscribed — update UI and re-sync
+                updatePushBellUI(true);
+                await syncSubscriptionWithServer(subscription);
+                return;
+            } else {
+                console.warn('[Push] VAPID key mismatch detected. Healing browser subscription...');
+                await subscription.unsubscribe();
+                subscription = null; // Force re-subscription below with new key
+            }
+        }
+
+        // Subscribe using the current valid server key
         subscription = await reg.pushManager.subscribe({
             userVisibleOnly:      true,
-            applicationServerKey: urlBase64ToUint8Array(public_key)
+            applicationServerKey: serverKeyUint8
         });
         await syncSubscriptionWithServer(subscription);
         if (typeof showInAppToast === 'function') {
             showInAppToast('Notifications Enabled', 'You will now receive push alerts.', null);
         }
     } catch (err) {
-        // User denied or other error
         console.warn('[Push] Blocked or failed:', err.message);
         updatePushBellUI(false);
         if (typeof showInAppToast === 'function') {
@@ -197,8 +217,13 @@ window.addEventListener('load', () => {
             try {
                 const reg          = await navigator.serviceWorker.ready;
                 const subscription = await reg.pushManager.getSubscription();
-                // Just update UI based on current subscription state — no auto-subscribe
-                updatePushBellUI(!!subscription);
+                if (subscription) {
+                    // Subscription exists — trigger self-healing check and synchronization
+                    await initPushNotifications();
+                } else {
+                    // No subscription exists — just update disabled UI (do not auto-prompt)
+                    updatePushBellUI(false);
+                }
             } catch (e) {
                 updatePushBellUI(false);
             }
