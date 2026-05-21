@@ -118,7 +118,14 @@ def edit_report(id):
         report.title = new_title
         report.description = new_desc
 
-    db.session.commit()
+    # SECURITY IMPLEMENTATION: Transaction Isolation & Rollback
+    # Wraps state changes in a transaction block to ensure that any database failure
+    # cleanly rolls back the session, preventing partial commits and data corruption.
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Database transaction failed.'}), 500
     return redirect(url_for('staff.submitted_reports'))
 
 
@@ -163,23 +170,39 @@ def control_panel():
 @login_required
 @staff_required
 def send_custom_push():
-    data = request.get_json()
-    user_id = data.get('user_id')
-    title = (data.get('title') or '').strip()
-    message = (data.get('message') or '').strip()
+    # SECURITY IMPLEMENTATION: Transaction Isolation & Rollback
+    # Wraps the entire push notification dispatch in a try-except block.
+    # This prevents any exception inside push_service from bubbling up to
+    # the global error handler, ensuring the frontend always receives a
+    # clean, structured JSON response instead of a masked 500 page.
+    try:
+        data = request.get_json(silent=True)
+        if not data:
+            return jsonify({'error': 'Invalid request body. Expected JSON.'}), 400
 
-    if not user_id or not title or not message:
-        return jsonify({'error': 'All fields are required.'}), 400
+        user_id = data.get('user_id')
+        title   = (data.get('title')   or '').strip()
+        message = (data.get('message') or '').strip()
 
-    target = db.session.get(User, int(user_id))
-    if not target or target.role != 'client':
-        return jsonify({'error': 'Client not found.'}), 404
+        if not user_id or not title or not message:
+            return jsonify({'error': 'All fields (recipient, title, message) are required.'}), 400
 
-    sent = send_push_notification(int(user_id), title, message)
-    if sent:
-        return jsonify({'message': 'Notification sent.'}), 200
-    else:
-        return jsonify({'error': 'Client has no active push subscription. They must enable notifications first.'}), 422
+        target = db.session.get(User, int(user_id))
+        if not target or target.role != 'client':
+            return jsonify({'error': 'Client not found.'}), 404
+
+        sent = send_push_notification(int(user_id), title, message)
+        if sent:
+            return jsonify({'message': f'Notification sent successfully to {target.first_name} {target.last_name}.'}), 200
+        else:
+            return jsonify({'error': 'Client has no active push subscription. They must enable notifications in their browser first.'}), 422
+
+    except ValueError:
+        return jsonify({'error': 'Invalid user ID format.'}), 400
+    except Exception as e:
+        from flask import current_app
+        current_app.logger.error(f'send_custom_push error: {e}')
+        return jsonify({'error': f'Push notification failed: {str(e)}'}), 500
 
 
 @staff_bp.route('/pet-records')
@@ -263,7 +286,13 @@ def update_booking_status(bid):
         user = _get_current_user()
         if user:
             booking.handled_by = f"{user.first_name} {user.last_name}"
-        db.session.commit()
+        # SECURITY IMPLEMENTATION: Transaction Isolation & Rollback
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            flash('Database transaction failed while updating booking.', 'error')
+            return redirect(request.referrer or url_for('dashboard.staff_dashboard'))
         log_action('Booking Update', f'Changed status of Booking #{bid} to {status.capitalize()}.', user=user)
 
         if booking.user_id:
@@ -301,7 +330,13 @@ def cancel_booking(bid):
             )
         
         send_booking_email(booking, 'cancelled')
-        db.session.commit()
+        # SECURITY IMPLEMENTATION: Transaction Isolation & Rollback
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            flash('Database transaction failed while cancelling booking.', 'error')
+            return redirect(request.referrer or url_for('dashboard.staff_dashboard'))
         flash(f'Booking #{bid} has been marked as cancelled.', 'success')
 
     return redirect(request.referrer or url_for('dashboard.staff_dashboard'))
@@ -322,7 +357,13 @@ def delete_booking(bid):
         return redirect(request.referrer or url_for('dashboard.staff_dashboard'))
 
     db.session.delete(booking)
-    db.session.commit()
+    # SECURITY IMPLEMENTATION: Transaction Isolation & Rollback
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        flash('Database transaction failed while deleting booking.', 'error')
+        return redirect(request.referrer or url_for('dashboard.staff_dashboard'))
     flash(f'Booking #{bid} has been permanently removed.', 'success')
     return redirect(request.referrer or url_for('dashboard.staff_dashboard'))
 
@@ -355,7 +396,12 @@ def availability():
         db.session.add(DoctorAvailability(date=d, slot=slot, status='unavailable'))
         status = 'unavailable'
 
-    db.session.commit()
+    # SECURITY IMPLEMENTATION: Transaction Isolation & Rollback
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': 'Database transaction failed'}), 500
     return jsonify({'success': True, 'date': target_date, 'slot': slot, 'new_status': status})
 
 
@@ -375,6 +421,11 @@ def delete_inquiry(mid):
     msg = db.session.get(ContactMessage, mid)
     if msg:
         db.session.delete(msg)
-        db.session.commit()
+        # SECURITY IMPLEMENTATION: Transaction Isolation & Rollback
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()
+            flash('Database transaction failed.', 'error')
         flash('Inquiry removed.', 'success')
     return redirect(url_for('staff.inquiries'))

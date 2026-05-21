@@ -18,14 +18,21 @@ class User(db.Model):
     contact       = db.Column(db.String(30))
     password_hash = db.Column(db.String(256), nullable=False)
     role          = db.Column(db.String(20),  default='client')  # client, staff, admin
-    is_active     = db.Column(db.Boolean,     default=True)
-    push_enabled  = db.Column(db.Boolean,     default=True, server_default='1')
-    created_at    = db.Column(db.DateTime,    default=datetime.utcnow)
+    is_active          = db.Column(db.Boolean,     default=True)
+    push_enabled       = db.Column(db.Boolean,     default=True, server_default='1')
+    
+    # SECURITY IMPLEMENTATION: Privacy Notice or Consent
+    # Tracks whether the user has explicitly agreed to the Privacy Policy 
+    # and records the exact timestamp of consent for regulatory data privacy compliance.
+    privacy_consent    = db.Column(db.Boolean,     default=False)
+    privacy_consent_at = db.Column(db.DateTime,    nullable=True)
+    
+    created_at         = db.Column(db.DateTime,    default=datetime.utcnow)
 
     bookings      = db.relationship('Booking',      backref='user', lazy=True)
     notifications = db.relationship('Notification', backref='user', lazy=True)
 
-    def __init__(self, first_name=None, last_name=None, email=None, contact=None, role='client', is_active=True, push_enabled=True, **kwargs):
+    def __init__(self, first_name=None, last_name=None, email=None, contact=None, role='client', is_active=True, push_enabled=True, privacy_consent=False, privacy_consent_at=None, **kwargs):
         super().__init__(
             first_name=first_name,
             last_name=last_name,
@@ -34,6 +41,8 @@ class User(db.Model):
             role=role,
             is_active=is_active,
             push_enabled=push_enabled,
+            privacy_consent=privacy_consent,
+            privacy_consent_at=privacy_consent_at,
             **kwargs
         )
 

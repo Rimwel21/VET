@@ -40,9 +40,22 @@ def create_app(config_name='default'):
         if app.config.get('AUTO_CREATE_DB'):
             db.create_all()
             _seed_data()
+            
+    # SECURITY IMPLEMENTATION: Error Handling & Data Leak Prevention
+    # Masks HTTP 500 internal server errors to prevent the application from leaking
+    # internal database schemas, file paths, or system tracebacks to end users.
+    # NOTE: Only handles explicit HTTP 500 responses - NOT all Python exceptions.
+    # Catching all Exception types here would intercept route-level try-except blocks
+    # and prevent JSON API routes (like /staff/send-custom-push) from returning
+    # proper error responses to the frontend JavaScript.
+    @app.errorhandler(500)
+    def handle_internal_server_error(error):
+        from flask import request, jsonify, render_template
+        if request.is_json or request.path.startswith('/api/') or request.path.startswith('/staff/'):
+            return jsonify({'error': 'An internal server error occurred. Please try again.'}), 500
+        return render_template('offline.html'), 500
+        
     return app
-
-
 def _run_migrations():
     """Applies simple schema migrations that may be missing in older DBs."""
     # pyrefly: ignore [missing-import]
@@ -54,6 +67,8 @@ def _run_migrations():
         "ALTER TABLE otp_verifications ADD COLUMN IF NOT EXISTS reset_token VARCHAR(255)",
         "ALTER TABLE otp_verifications ADD COLUMN IF NOT EXISTS token_expires_at TIMESTAMP",
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS push_enabled BOOLEAN DEFAULT TRUE",
+        "ALTER TABLE users ADD COLUMN privacy_consent BOOLEAN DEFAULT FALSE",
+        "ALTER TABLE users ADD COLUMN privacy_consent_at TIMESTAMP",
         "CREATE TABLE IF NOT EXISTS audit_logs (id SERIAL PRIMARY KEY, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, user_id INTEGER REFERENCES users(id), user_name VARCHAR(100), action_type VARCHAR(50), description TEXT, ip_address VARCHAR(45))"
     ]
     

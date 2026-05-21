@@ -43,6 +43,16 @@
                     <span onclick="togglePassword('signupPass2', this)" title="Show Password" style="position:absolute; right: 15px; top:50%; transform:translateY(-50%); cursor:pointer; font-size: 18px; color: #64748B; user-select: none;">👁️</span>
                 </div>
             </div>
+            
+            <!-- SECURITY IMPLEMENTATION: Privacy Notice or Consent -->
+            <!-- Provides the explicit front-end UI requirement for data privacy adherence. -->
+            <div style="margin: 15px 0 25px 0; width: 100%; display: flex; justify-content: center;">
+                <label style="display: flex; align-items: flex-start; justify-content: center; gap: 8px; font-size: 13px; color: #475569; cursor: pointer; text-align: center; max-width: 90%;">
+                    <input type="checkbox" name="privacy_consent" id="privacy_consent" required style="width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; cursor: pointer;">
+                    <span style="line-height: 1.5;">I have read and accept the <a href="#" style="color: #1abc9c; text-decoration: none; font-weight: 600;">Privacy Policy</a> and <a href="#" style="color: #1abc9c; text-decoration: none; font-weight: 600;">Terms of Service</a>.</span>
+                </label>
+            </div>
+            
             <button type="submit" class="btn-auth">Sign up</button>
             <p class="auth-switch">Already have an account? <a href="{{ url_for('auth.login') }}">Log in</a></p>
         </form>

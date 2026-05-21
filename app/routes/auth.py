@@ -38,6 +38,14 @@ def signup():
             flash('Email already registered.', 'error')
             return render_template('signup.html')
 
+        # SECURITY IMPLEMENTATION: Privacy Notice or Consent
+        # Mandates that users explicitly grant data privacy consent before 
+        # registration and processing of personal data can proceed.
+        consent_given = request.form.get('privacy_consent') == 'on'
+        if not consent_given:
+            flash('You must accept the Privacy Notice and Terms of Service to register.', 'error')
+            return render_template('signup.html')
+            
         # Check for successful OTP verification in the last 10 minutes
         from app.models.otp_verification import OtpVerification
         from datetime import datetime, timedelta
@@ -58,7 +66,9 @@ def signup():
             first_name=fn,
             last_name=ln,
             email=em,
-            contact=ct
+            contact=ct,
+            privacy_consent=True,
+            privacy_consent_at=datetime.utcnow()
         )
         # VETSYNC SECURITY MATRIX: Password Hashing Trigger
         # Captures the user's password input and triggers the Werkzeug cryptographically 

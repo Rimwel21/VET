@@ -15,17 +15,16 @@ def register_security_hooks(app):
         if _https_required(app) and not _request_is_secure():
             return redirect(request.url.replace('http://', 'https://', 1), code=301)
 
-        """
-        Session Hijacking Protection (DISABLED FOR MOBILE COMPATIBILITY):
-        Previously locked the session to the user's IP and User-Agent.
-        This was causing frequent logouts on mobile due to UA/IP transitions.
-        """
-        # if 'user_id' in session:
-        #     if (session.get('ip') != request.remote_addr or
-        #             session.get('user_agent') != request.headers.get('User-Agent')):
-        #         session.clear()
-        #         flash('Security Alert: Session terminated due to suspicious activity.', 'error')
-        #         return redirect(url_for('auth.login'))
+        # SECURITY IMPLEMENTATION: Unauthorized Access & Session Hijacking Protection
+        # Verifies the continuity of the request IP address and User-Agent signature.
+        # If the environment shifts (indicating possible cookie theft or session fixation),
+        # the session is immediately invalidated to protect user data access.
+        if 'user_id' in session:
+            if (session.get('ip') != request.remote_addr or
+                    session.get('user_agent') != request.headers.get('User-Agent')):
+                session.clear()
+                flash('Security Alert: Session terminated due to suspicious activity.', 'error')
+                return redirect(url_for('auth.login'))
 
     @app.after_request
     def add_security_headers(response):

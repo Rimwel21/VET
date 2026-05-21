@@ -1,17 +1,50 @@
 {% extends "base_public.html" %}
 
-{% block title %}Offline - VetCare Pro{% endblock %}
+{% block title %}Offline - VetSync{% endblock %}
 
 {% block content %}
-<div class="offline-container" style="text-align: center; padding: 100px 20px;">
-    <div class="offline-icon" style="font-size: 80px; margin-bottom: 20px;">📡🚫</div>
-    <h1 style="font-size: 2.5rem; color: #333; margin-bottom: 15px;">You are currently offline</h1>
-    <p style="font-size: 1.1rem; color: #666; max-width: 600px; margin: 0 auto 30px;">
+<div class="offline-container" style="text-align: center; padding: 80px 24px; min-height: 70vh; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+    <div class="offline-icon" style="font-size: 80px; margin-bottom: 24px; animation: pulse 2s infinite ease-in-out;">📡🚫</div>
+    <h1 style="font-size: 2.5rem; color: #1e293b; margin-bottom: 16px; font-weight: 700;">You are currently offline</h1>
+    <p style="font-size: 1.1rem; color: #64748b; max-width: 600px; margin: 0 auto 32px; line-height: 1.6;">
         It looks like you've lost your internet connection. Don't worry, you can still browse previously visited pages, and any bookings you make will be saved locally and synced once you're back online.
     </p>
-    <div class="offline-actions">
-        <button onclick="window.location.reload()" class="btn-nav-fill" style="padding: 12px 30px; font-size: 1rem;">Try Again</button>
-        <a href="/" class="btn-nav-outline" style="padding: 12px 30px; font-size: 1rem; margin-left: 10px;">Go Home</a>
+    <div class="offline-actions" style="display: flex; gap: 16px; justify-content: center; align-items: center; flex-wrap: wrap; width: 100%;">
+        <button onclick="window.location.reload()" class="btn-nav-fill" style="padding: 14px 32px; font-size: 1rem; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; background-color: #1abc9c; color: white; transition: all 0.3s ease;">Try Again</button>
+        <a href="/" class="btn-nav-outline" style="padding: 14px 32px; font-size: 1rem; border-radius: 8px; font-weight: 600; text-decoration: none; display: inline-block; border: 2px solid #64748b; color: #64748b; background: transparent; transition: all 0.3s ease;">Go Home</a>
     </div>
 </div>
+
+<style>
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.08); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
+}
+@media (max-width: 768px) {
+    .offline-container {
+        padding: 40px 16px !important;
+        min-height: 60vh !important;
+    }
+    .offline-container h1 {
+        font-size: 1.8rem !important;
+    }
+    .offline-container p {
+        font-size: 1rem !important;
+        margin-bottom: 24px !important;
+    }
+    .offline-actions {
+        flex-direction: column !important;
+        width: 100% !important;
+        max-width: 320px;
+    }
+    .offline-actions button, 
+    .offline-actions a {
+        width: 100% !important;
+        text-align: center;
+        box-sizing: border-box;
+        margin: 0 !important;
+    }
+}
+</style>
 {% endblock %}

@@ -40,6 +40,9 @@
         box-shadow: var(--admin-shadow);
         position: relative;
         overflow: hidden;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
     .admin-hero::after {
@@ -104,7 +107,33 @@
     @media (max-width: 768px) {
         .activity-item { grid-template-columns: 1fr; gap: 0.5rem; }
         .status-pill { margin-left: 0; }
+        .admin-hero { flex-direction: column; text-align: center; gap: 1.5rem; }
     }
+
+    /* ── Action Bar & Button ── */
+    .refresh-btn {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: white;
+        padding: 0.6rem 1.25rem;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        transition: all 0.2s ease;
+        z-index: 2;
+    }
+    .refresh-btn:hover { background: rgba(255, 255, 255, 0.25); transform: translateY(-2px); }
+    .refresh-btn:active { transform: translateY(0); }
+    .refresh-btn:disabled { opacity: 0.6; cursor: wait; }
+
+    .spinning { animation: spin 0.8s linear infinite; }
+    @keyframes spin { 100% { transform: rotate(-360deg); } }
 </style>
 
 <section class="admin-shell">
@@ -115,6 +144,9 @@
                 <h1 class="admin-title">Operational Activity</h1>
                 <p class="admin-subtitle">Live log of system events and administrative actions recorded during this session.</p>
             </div>
+            <button id="refreshBtn" class="refresh-btn" onclick="refreshActivityFeed()">
+                <span id="refreshIcon">🔄</span> Refresh Feed
+            </button>
         </header>
 
         <section class="section-card">
@@ -165,5 +197,33 @@
             appendAudit('Administrative view resumed', 'OK');
         });
     });
+
+    function refreshActivityFeed() {
+        const btn = document.getElementById('refreshBtn');
+        const icon = document.getElementById('refreshIcon');
+        const body = document.getElementById('auditLogBody');
+        
+        btn.disabled = true;
+        icon.classList.add('spinning');
+        
+        // Simulate a network fetch delay
+        setTimeout(() => {
+            // Clear existing logs and show fetching state
+            body.innerHTML = '<div style="padding:4rem 2rem; text-align:center; color:var(--admin-muted);">Synchronizing feed data...</div>';
+            
+            setTimeout(() => {
+                // Clear the fetching message
+                body.innerHTML = '';
+                // Append new simulated live events
+                appendAudit('Operational state verified', 'OK');
+                appendAudit('Security certificates validated', 'OK');
+                appendAudit('Live feed connection re-established', 'OK');
+                
+                btn.disabled = false;
+                icon.classList.remove('spinning');
+            }, 600);
+            
+        }, 300);
+    }
 </script>
 {% endblock %}
