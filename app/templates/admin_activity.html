@@ -198,6 +198,9 @@
         });
     });
 
+    // Refresh button handler: clears the current activity log display and re-populates
+    // it with simulated live system events. The button is disabled during the refresh
+    // to prevent duplicate triggers, and a spinning animation provides visual feedback.
     function refreshActivityFeed() {
         const btn = document.getElementById('refreshBtn');
         const icon = document.getElementById('refreshIcon');

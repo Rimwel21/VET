@@ -1,3 +1,9 @@
+{# SECURITY IMPLEMENTATION: Error Handling and Data Leak Prevention #}
+{# This page serves two purposes: #}
+{# 1. Displayed by the service worker when the user is genuinely offline (no network). #}
+{# 2. Used as the masked fallback by the global 500 error handler in app/__init__.py. #}
+{# Showing this page instead of a raw Python traceback prevents the application from #}
+{# leaking internal file paths, database schemas, or system stack traces to end users. #}
 {% extends "base_public.html" %}
 
 {% block title %}Offline - VetSync{% endblock %}
