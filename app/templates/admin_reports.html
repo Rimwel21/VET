@@ -234,29 +234,39 @@
 
     async function loadReports() {
         const headers = getAuthHeaders();
-        const inlineList = document.getElementById('inlineReportList');
         try {
             const res = await fetch('/api/v1/reports', { headers });
             if (!res.ok) throw new Error('Unable to load reports');
             allReports = await res.json();
-            inlineList.innerHTML = allReports.length ? '' : '<div style="padding:2rem; text-align:center;">No reports found.</div>';
-
-            allReports.forEach((r) => {
-                const statusStr = r.is_deleted ? 'DELETED' : (r.status || 'Pending').toUpperCase();
-                const statusClass = r.is_deleted ? 'status-needs_action' : `status-${(r.status || 'Pending').toLowerCase()}`;
-                
-                inlineList.insertAdjacentHTML('beforeend', `
-                    <div class="report-item" onclick="loadReport(${r.id})">
-                        <span class="report-item-title" style="${r.is_deleted ? 'text-decoration:line-through; opacity:0.5;' : ''}">${r.title}</span>
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="font-size:0.75rem; color:var(--admin-muted);">${r.staff_name} • ${r.created_at}</span>
-                            <span class="status-pill ${statusClass}">${statusStr}</span>
-                        </div>
-                    </div>
-                `);
-            });
+            renderReports(allReports);
         } catch (e) {
-            inlineList.innerHTML = '<div style="padding:2rem; text-align:center;">Unavailable.</div>';
+            document.getElementById('inlineReportList').innerHTML = '<div style="padding:2rem; text-align:center;">Unavailable.</div>';
+        }
+    }
+
+    function renderReports(reportsList) {
+        const inlineList = document.getElementById('inlineReportList');
+        inlineList.innerHTML = reportsList.length ? '' : '<div style="padding:2rem; text-align:center;">No reports found.</div>';
+
+        reportsList.forEach((r) => {
+            const statusStr = r.is_deleted ? 'DELETED' : (r.status || 'Pending').toUpperCase();
+            const statusClass = r.is_deleted ? 'status-needs_action' : `status-${(r.status || 'Pending').toLowerCase()}`;
+            
+            inlineList.insertAdjacentHTML('beforeend', `
+                <div class="report-item" data-report-id="${r.id}" onclick="loadReport(${r.id})">
+                    <span class="report-item-title" style="${r.is_deleted ? 'text-decoration:line-through; opacity:0.5;' : ''}">${r.title}</span>
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:0.75rem; color:var(--admin-muted);">${r.staff_name} • ${r.created_at}</span>
+                        <span class="status-pill ${statusClass}">${statusStr}</span>
+                    </div>
+                </div>
+            `);
+        });
+
+        // Restore active class if currentReportId is still rendered
+        if (currentReportId) {
+            const activeItem = inlineList.querySelector(`.report-item[data-report-id="${currentReportId}"]`);
+            if (activeItem) activeItem.classList.add('active');
         }
     }
 
@@ -266,7 +276,8 @@
         currentReportId = id;
         
         document.querySelectorAll('.report-item').forEach(el => el.classList.remove('active'));
-        if (event && event.currentTarget) event.currentTarget.classList.add('active');
+        const activeItem = document.querySelector(`.report-item[data-report-id="${id}"]`);
+        if (activeItem) activeItem.classList.add('active');
 
         const statusStr = report.is_deleted ? 'DELETED' : (report.status || 'Pending').toUpperCase();
         const statusClass = report.is_deleted ? 'status-needs_action' : `status-${(report.status || 'Pending').toLowerCase()}`;
@@ -316,15 +327,29 @@
     }
 
     async function deleteReport() {
-        if (!confirm("Delete this report?")) return;
+        if (!currentReportId) return;
+        const reason = prompt("Please enter a reason for deleting this report (optional):");
+        if (reason === null) return; // User clicked Cancel
+        
         try {
             const res = await fetch(`/api/v1/reports/${currentReportId}`, {
                 method: 'DELETE',
-                headers: getAuthHeaders()
+                headers: getAuthHeaders(),
+                body: JSON.stringify({ reason: reason.trim() })
             });
             if (res.ok) {
                 alert('Report deleted successfully.');
-                window.location.href = '/admin/reports'; // Redirect back to list
+                
+                // Clear the report detail view immediately to prevent cached view of deleted report
+                currentReportId = null;
+                document.getElementById('reportTitle').innerHTML = 'Select a report';
+                document.getElementById('reportStaticContent').innerHTML = 'Select a report from the list to view and manage its details.';
+                document.getElementById('reviewBox').style.display = 'none';
+                document.getElementById('adminEditContent').value = '';
+                document.getElementById('adminComment').value = '';
+                
+                // Refresh the list immediately
+                await loadReports();
             } else {
                 alert('Error: Failed to delete report.');
             }
@@ -333,6 +358,23 @@
         }
     }
 
-    window.addEventListener('load', loadReports);
+    window.addEventListener('load', () => {
+        loadReports();
+        
+        document.getElementById('reportSearch').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            const filtered = allReports.filter(r => {
+                const title = (r.title || '').toLowerCase();
+                const category = (r.category || '').toLowerCase();
+                const staffName = (r.staff_name || '').toLowerCase();
+                const description = (r.description || '').toLowerCase();
+                return title.includes(query) || 
+                       category.includes(query) || 
+                       staffName.includes(query) || 
+                       description.includes(query);
+            });
+            renderReports(filtered);
+        });
+    });
 </script>
 {% endblock %}

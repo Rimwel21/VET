@@ -13,7 +13,7 @@ api_reports_bp = Blueprint('api_reports', __name__)
 def reports(current_user_jwt):
     if request.method == 'GET':
         if current_user_jwt.role == 'admin':
-            items = Report.query.order_by(Report.created_at.desc()).all()
+            items = Report.query.filter_by(is_deleted=False).order_by(Report.created_at.desc()).all()
         else:
             items = Report.query.filter_by(user_id=current_user_jwt.id, is_deleted=False).order_by(Report.created_at.desc()).all()
 
@@ -48,12 +48,38 @@ def reports(current_user_jwt):
     return jsonify({'message': 'Report submitted successfully'}), 201
 
 
-@api_reports_bp.route('/<int:report_id>', methods=['PUT', 'DELETE'])
-@role_required(['admin'])
+@api_reports_bp.route('/<int:report_id>', methods=['GET', 'PUT', 'DELETE'])
+@role_required(['staff', 'admin'])
 def report_detail(current_user_jwt, report_id):
     report = db.session.get(Report, report_id)
     if not report:
+        from app.models.audit_log import AuditLog
+        deleted_log = AuditLog.query.filter(
+            AuditLog.action_type == 'Report Deleted',
+            AuditLog.description.like(f"Deleted report ID {report_id}%")
+        ).first()
+        if deleted_log:
+            return jsonify({'error': 'This report has been deleted and is no longer available.'}), 410
         return jsonify({'error': 'Report not found'}), 404
+
+    if request.method == 'GET':
+        return jsonify({
+            'id': report.id, 'title': report.title, 'category': report.category,
+            'description': report.description, 'status': report.status,
+            'admin_comment': report.admin_comment, 
+            'admin_review_status': report.admin_review_status,
+            'reviewed_by': report.reviewed_by,
+            'reviewed_at': report.reviewed_at.strftime('%b %d, %Y %H:%M') if report.reviewed_at else None,
+            'user_id': report.user_id,
+            'staff_name': _staff_name(report.user_id),
+            'created_at': report.created_at.strftime('%b %d, %Y'),
+            'is_deleted': report.is_deleted,
+            'edit_history': report.edit_history
+        }), 200
+
+    # Ensure only admin can modify/delete
+    if current_user_jwt.role != 'admin':
+        return jsonify({'error': 'Access denied: Admins only.'}), 403
 
     if request.method == 'PUT':
         data = request.get_json()
@@ -92,12 +118,31 @@ def report_detail(current_user_jwt, report_id):
         db.session.commit()
         return jsonify({'message': 'Report updated successfully'})
 
-    # Soft Delete
-    report.is_deleted = True
-    report.deleted_by = current_user_jwt.id
-    report.deleted_at = datetime.utcnow()
+    # Hard Delete with Deletion Audit Log
+    reason = None
+    if request.is_json:
+        try:
+            data = request.get_json(silent=True) or {}
+            reason = data.get('reason')
+        except Exception:
+            pass
+    if not reason:
+        reason = request.args.get('reason')
+
+    reason_str = f" Reason: {reason}." if reason else " No reason provided."
+    report_id = report.id
+    report_title = report.title
+
+    from app.utils.logger import log_action
+    log_action(
+        'Report Deleted',
+        f"Deleted report ID {report_id} ('{report_title}').{reason_str}",
+        user=current_user_jwt
+    )
+
+    db.session.delete(report)
     db.session.commit()
-    return jsonify({'message': 'Report deleted successfully (Soft Delete)'})
+    return jsonify({'message': 'Report deleted successfully (Hard Delete)'})
 
 
 

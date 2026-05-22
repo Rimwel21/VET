@@ -1,7 +1,7 @@
 import base64
 import json
 from datetime import datetime
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify # type: ignore
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, abort # type: ignore
 from app.extensions import db
 from app.models.contact import ContactMessage
 from app.models.booking import Booking
@@ -80,7 +80,7 @@ def appointments():
 def submitted_reports():
     user = _get_current_user()
     if user.role == 'admin':
-        reports = Report.query.order_by(Report.created_at.desc()).all()
+        reports = Report.query.filter_by(is_deleted=False).order_by(Report.created_at.desc()).all()
     else:
         # Staff view rule: Only active reports
         reports = Report.query.filter_by(user_id=user.id, is_deleted=False).order_by(Report.created_at.desc()).all()
@@ -92,7 +92,21 @@ def submitted_reports():
 @staff_required
 def edit_report(id):
     user = _get_current_user()
-    report = Report.query.get_or_404(id)
+    report = db.session.get(Report, id)
+    if not report:
+        from app.models.audit_log import AuditLog
+        deleted_log = AuditLog.query.filter(
+            AuditLog.action_type == 'Report Deleted',
+            AuditLog.description.like(f"Deleted report ID {id}%")
+        ).first()
+        if deleted_log:
+            if request.is_json or request.headers.get('Accept') == 'application/json':
+                return jsonify({'error': 'This report has been deleted and is no longer available.'}), 410
+            flash('This report has been deleted and is no longer available.', 'error')
+            return redirect(url_for('staff.submitted_reports'))
+        if request.is_json or request.headers.get('Accept') == 'application/json':
+            return jsonify({'error': 'Report not found.'}), 404
+        abort(404)
 
     if report.user_id != user.id:
         return jsonify({'error': 'Unauthorized'}), 403
