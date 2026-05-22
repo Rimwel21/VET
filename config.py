@@ -16,7 +16,7 @@ class Config:
         "pool_recycle": 300,
     }
     AUTO_CREATE_DB = os.getenv('AUTO_CREATE_DB', 'false').lower() == 'true'
-    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'super-secret-jwt-key')
+    JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'supergit-secret-jwt-key')
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=15)
 
     MAIL_SERVER = 'smtp.gmail.com'

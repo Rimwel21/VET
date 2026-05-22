@@ -1,5 +1,5 @@
 {% extends "base_staff.html" %}
-{% block title %}Veterinarian Dashboard - VetSync{% endblock %}
+{% block title %}Staff Dashboard - VetSync{% endblock %}
 
 {% block content %}
 <style>
@@ -602,8 +602,8 @@
     <div class="main-content" style="width: 100%;">
         <div class="dash-header">
             <div>
-                <h1 class="dash-title">Veterinarian Dashboard</h1>
-                <p style="color: var(--dash-text-muted); margin-top: 6px; font-size: 15px;">Welcome back, <strong>Dr. {{ user.last_name }}</strong></p>
+                <h1 class="dash-title">Staff Dashboard</h1>
+                <p style="color: var(--dash-text-muted); margin-top: 6px; font-size: 15px;">Welcome back, <strong>{{ user.first_name }} {{ user.last_name }}</strong></p>
             </div>
         </div>
 

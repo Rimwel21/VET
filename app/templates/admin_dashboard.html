@@ -305,12 +305,12 @@
             <div class="section-header">
                 <div>
                     <p class="section-kicker">Access Control</p>
-                    <h2 class="admin-section-title">User Management</h2>
-                    <p class="section-desc">Create staff accounts and manage administrator access levels.</p>
+                    <h2 class="admin-section-title">Staff Management</h2>
+                    <p class="section-desc">Create and manage staff accounts. Only one administrator account is permitted.</p>
                 </div>
-                                <button class="btn primary" type="button" onclick="openAddModal()" style="display:inline-flex; align-items:center; gap:7px;">
+                                <button class="btn primary" type="button" onclick="openAddModal()" style="display:inline-flex; align-items:center; gap:7px;" id="btnAddStaff">
                   <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="4"/><path d="M2 20c0-4 3.6-7 8-7"/><circle cx="19" cy="19" r="3"/><line x1="19" y1="16" x2="19" y2="22"/><line x1="16" y1="19" x2="22" y2="19"/></svg>
-                  Add Staff / Doctor
+                  Add Staff
                 </button>
             </div>
             <div class="table-wrap hide-mobile">
@@ -339,7 +339,7 @@
 <!-- Staff Modal -->
 <div id="staffModal" class="modal-panel" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.6); backdrop-filter:blur(4px); z-index:1200; align-items:center; justify-content:center; padding:1.5rem;">
     <div class="modal-box" style="background:white; border-radius:16px; padding:2rem; width:100%; max-width:500px; box-shadow:0 20px 40px rgba(0,0,0,0.2);">
-        <h2 id="modalTitle" style="color:var(--admin-primary); font-family:'Nunito',sans-serif; font-size:1.5rem; font-weight:900; margin-bottom:0.5rem;">Add New Staff</h2>
+        <h2 id="modalTitle" style="color:var(--admin-primary); font-family:'Nunito',sans-serif; font-size:1.5rem; font-weight:900; margin-bottom:0.5rem;">Add Staff Account</h2>
         <form id="staffForm" style="display:flex; flex-direction:column; gap:1rem;">
             <input type="hidden" id="staffId">
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
@@ -357,11 +357,8 @@
                 <input type="email" id="staffEmail" required style="width:100%; padding:0.75rem; border:1.5px solid var(--admin-border); border-radius:8px;">
             </div>
             <div>
-                <label style="font-size:0.75rem; font-weight:800; color:var(--admin-primary); display:block; margin-bottom:4px;">Role</label>
-                <select id="staffRole" style="width:100%; padding:0.75rem; border:1.5px solid var(--admin-border); border-radius:8px;">
-                    <option value="staff">Staff / Doctor</option>
-                    <option value="admin">Administrator</option>
-                </select>
+                <label style="font-size:0.75rem; font-weight:800; color:var(--admin-primary); display:block; margin-bottom:4px;">Contact (optional)</label>
+                <input type="text" id="staffContact" placeholder="e.g. 09123456789" style="width:100%; padding:0.75rem; border:1.5px solid var(--admin-border); border-radius:8px;">
             </div>
             <div>
                 <label style="font-size:0.75rem; font-weight:800; color:var(--admin-primary); display:block; margin-bottom:4px;">Password</label>
@@ -399,9 +396,21 @@
         };
     }
 
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toast-container') || document.body;
+        const toast = document.createElement('div');
+        const bg = type === 'success' ? '#166534' : type === 'error' ? '#991b1b' : '#92400e';
+        toast.style.cssText = `background:${bg}; color:white; padding:14px 20px; border-radius:12px; font-weight:700; font-size:0.9rem; box-shadow:0 8px 24px rgba(0,0,0,0.2); min-width:280px; animation:fadeInUp 0.3s ease; position:fixed; bottom:24px; right:24px; z-index:9999;`;
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+    }
+
     function openAddModal() {
-        document.getElementById('modalTitle').innerText = 'Add Staff / Doctor';
+        document.getElementById('modalTitle').innerText = 'Add Staff Account';
         document.getElementById('staffId').value = '';
+        document.getElementById('statusField').style.display = 'none';
+        document.getElementById('btnDeleteUser').style.display = 'none';
         staffForm.reset();
         staffModal.style.display = 'flex';
     }
@@ -417,126 +426,141 @@
         try {
             const res = await fetch('/api/v1/users', { headers });
             const users = await res.json();
-            const internalUsers = users.filter(u => ['admin', 'staff', 'vet'].includes(u.role));
-            body.innerHTML = internalUsers.length ? '' : '<tr><td colspan="5" class="empty-row">No staff found.</td></tr>';
+            body.innerHTML = users.length ? '' : '<tr><td colspan="5" class="empty-row" style="text-align:center;padding:2rem;">No staff accounts found. Use "Add Staff" to create one.</td></tr>';
             cards.innerHTML = '';
 
-            internalUsers.forEach(u => {
+            users.forEach(u => {
                 const statusClass = u.is_active ? 'status-active' : 'status-inactive';
                 const statusLabel = u.is_active ? 'Active' : 'Inactive';
+                const deactivateBtn = u.is_active
+                    ? `<button class="btn small" onclick="deactivateStaff(${u.id})" style="color:#92400e; border-color:#fef3c7; background:#fffbeb;" title="Deactivate account">⏸ Deactivate</button>`
+                    : `<button class="btn small" onclick="reactivateStaff(${u.id})" style="color:#166534; border-color:#dcfce7; background:#f0fdf4;" title="Reactivate account">▶ Reactivate</button>`;
                 
                 body.insertAdjacentHTML('beforeend', `
-                    <tr>
+                    <tr id="row-${u.id}">
                         <td><strong>${u.first_name} ${u.last_name}</strong></td>
                         <td>${u.email}</td>
-                        <td><span style="text-transform:capitalize;">${u.role}</span></td>
+                        <td><span style="text-transform:capitalize; font-weight:700;">Staff</span></td>
                         <td><span class="status-pill ${statusClass}">${statusLabel}</span></td>
-                        <td><button class="btn small" onclick="openEditModal(${u.id})">Edit</button></td>
+                        <td style="display:flex; gap:6px; flex-wrap:wrap;">
+                            ${deactivateBtn}
+                            <button class="btn small" onclick="deleteStaff(${u.id}, '${u.first_name} ${u.last_name}')" style="color:#991b1b; border-color:#fee2e2; background:#fff5f5;" title="Delete staff account">🗑 Delete</button>
+                        </td>
                     </tr>
                 `);
 
                 cards.insertAdjacentHTML('beforeend', `
-                    <div class="admin-card">
-                         <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
-                             <strong>${u.first_name} ${u.last_name}</strong>
-                             <span class="status-pill ${statusClass}">${statusLabel}</span>
-                         </div>
-                         <div style="font-size:0.85rem; color:var(--admin-muted);">
-                             <div>${u.email}</div>
-                             <div style="text-transform:capitalize;">Role: ${u.role}</div>
-                         </div>
-                         <div style="margin-top:10px;">
-                             <button class="btn small primary" onclick="openEditModal(${u.id})" style="width:100%;">Edit Profile</button>
-                         </div>
+                    <div class="admin-card" id="card-${u.id}">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                            <strong>${u.first_name} ${u.last_name}</strong>
+                            <span class="status-pill ${statusClass}">${statusLabel}</span>
+                        </div>
+                        <div style="font-size:0.85rem; color:var(--admin-muted); margin-bottom:12px;">
+                            <div>${u.email}</div>
+                            <div style="font-weight:700; margin-top:2px;">Role: Staff</div>
+                        </div>
+                        <div style="display:flex; gap:8px; flex-direction:column;">
+                            ${u.is_active
+                                ? `<button class="btn small" onclick="deactivateStaff(${u.id})" style="color:#92400e; border-color:#fef3c7; background:#fffbeb;">⏸ Deactivate</button>`
+                                : `<button class="btn small" onclick="reactivateStaff(${u.id})" style="color:#166534; border-color:#dcfce7; background:#f0fdf4;">▶ Reactivate</button>`
+                            }
+                            <button class="btn small" onclick="deleteStaff(${u.id}, '${u.first_name} ${u.last_name}')" style="color:#991b1b; border-color:#fee2e2;">🗑 Delete</button>
+                        </div>
                     </div>
                 `);
             });
-        } catch (e) {}
+        } catch (e) {
+            document.getElementById('staffTableBody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:2rem;color:#991b1b;">Failed to load staff accounts.</td></tr>';
+        }
     }
 
-    async function openEditModal(userId) {
-        document.getElementById('modalTitle').innerText = 'Edit Staff / Doctor';
-        document.getElementById('staffId').value = userId;
-        document.getElementById('statusField').style.display = 'block';
-        document.getElementById('btnDeleteUser').style.display = 'block';
+    async function deactivateStaff(userId) {
+        if (!confirm('Deactivate this staff account? They will no longer be able to log in.')) return;
         try {
-            const res = await fetch(`/api/v1/users/${userId}`, { headers: getAuthHeaders() });
-            const user = await res.json();
-            if (res.ok) {
-                document.getElementById('firstName').value = user.first_name;
-                document.getElementById('lastName').value = user.last_name;
-                document.getElementById('staffEmail').value = user.email;
-                document.getElementById('staffRole').value = user.role === 'vet' ? 'staff' : user.role;
-                document.getElementById('staffStatus').value = user.is_active.toString();
-                staffModal.style.display = 'flex';
-            }
-        } catch (e) {}
-    }
-
-    async function removeUser() {
-        const userId = document.getElementById('staffId').value;
-        if (!userId) return;
-        if (!confirm("Are you sure you want to remove this staff account? This action cannot be undone.")) return;
-
-        try {
-            const res = await fetch(`/api/v1/users/${userId}`, { 
-                method: 'DELETE', 
-                headers: getAuthHeaders() 
+            const res = await fetch(`/api/v1/users/${userId}/deactivate`, {
+                method: 'POST',
+                headers: getAuthHeaders()
             });
+            const data = await res.json();
             if (res.ok) {
-                alert('User removed successfully.');
-                closeStaffModal();
+                showToast(data.message || 'Staff account deactivated successfully.', 'success');
                 loadStaff();
             } else {
-                alert('Failed to remove user.');
+                showToast(data.error || 'Failed to deactivate account.', 'error');
             }
         } catch (e) {
-            alert('System Error: Unable to complete request.');
+            showToast('System Error: Unable to complete request.', 'error');
+        }
+    }
+
+    async function reactivateStaff(userId) {
+        if (!confirm('Reactivate this staff account? They will regain login access.')) return;
+        try {
+            const res = await fetch(`/api/v1/users/${userId}/reactivate`, {
+                method: 'POST',
+                headers: getAuthHeaders()
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showToast(data.message || 'Staff account reactivated successfully.', 'success');
+                loadStaff();
+            } else {
+                showToast(data.error || 'Failed to reactivate account.', 'error');
+            }
+        } catch (e) {
+            showToast('System Error: Unable to complete request.', 'error');
+        }
+    }
+
+    async function deleteStaff(userId, name) {
+        if (!confirm(`PERMANENTLY DELETE the account for "${name}"?\n\nThis action cannot be undone.`)) return;
+        try {
+            const res = await fetch(`/api/v1/users/${userId}`, {
+                method: 'DELETE',
+                headers: getAuthHeaders()
+            });
+            const data = await res.json();
+            if (res.ok) {
+                showToast(`Staff account for ${name} has been permanently deleted.`, 'success');
+                loadStaff();
+            } else {
+                showToast(data.error || 'Failed to delete account.', 'error');
+            }
+        } catch (e) {
+            showToast('System Error: Unable to complete request.', 'error');
         }
     }
 
     staffForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const userId = document.getElementById('staffId').value;
-        const method = userId ? 'PUT' : 'POST';
-        const url = userId ? `/api/v1/users/${userId}` : '/api/v1/users';
+        const method = 'POST';
+        const url = '/api/v1/users';
         const data = {
-            first_name: document.getElementById('firstName').value,
-            last_name: document.getElementById('lastName').value,
-            email: document.getElementById('staffEmail').value,
-            role: document.getElementById('staffRole').value
+            first_name: document.getElementById('firstName').value.trim(),
+            last_name: document.getElementById('lastName').value.trim(),
+            email: document.getElementById('staffEmail').value.trim(),
+            contact: document.getElementById('staffContact').value.trim(),
+            role: 'staff'
         };
-        
-        if (userId) {
-            data.is_active = document.getElementById('staffStatus').value === 'true';
-        }
 
         const pwd = document.getElementById('staffPassword').value;
-        if(pwd) data.password = pwd;
+        if (pwd) data.password = pwd;
 
         try {
             const res = await fetch(url, { method, headers: getAuthHeaders(), body: JSON.stringify(data) });
+            const result = await res.json();
             if (res.ok) {
-                alert(userId ? 'Account updated successfully.' : 'New staff account created.');
+                showToast('New staff account created successfully!', 'success');
                 closeStaffModal();
                 loadStaff();
             } else {
-                const err = await res.json();
-                alert('Error: ' + (err.error || err.message || 'Failed to save account.'));
+                showToast('Error: ' + (result.error || result.message || 'Failed to create account.'), 'error');
             }
         } catch (e) {
-            alert('System Error: Unable to save account.');
+            showToast('System Error: Unable to save account.', 'error');
         }
     });
-
-    function openAddModal() {
-        document.getElementById('modalTitle').innerText = 'Add Staff / Doctor';
-        document.getElementById('staffId').value = '';
-        document.getElementById('statusField').style.display = 'none';
-        document.getElementById('btnDeleteUser').style.display = 'none';
-        staffForm.reset();
-        staffModal.style.display = 'flex';
-    }
 
     window.addEventListener('load', loadStaff);
 </script>

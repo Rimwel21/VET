@@ -97,6 +97,21 @@ def login():
 
         email    = clean_input(data.get('email', '').lower())
         password = data.get('password', '')
+        
+        # DEBUG: Log the exact received inputs to identify any mismatches
+        try:
+            with open('scratch/login_debug.log', 'a', encoding='utf-8') as f:
+                f.write(f"--- Login Attempt ---\n")
+                f.write(f"Received email: {repr(email)}\n")
+                f.write(f"Received password: {repr(password)}\n")
+                dbg_user = User.query.filter_by(email=email).first()
+                f.write(f"User found: {dbg_user is not None}\n")
+                if dbg_user:
+                    f.write(f"User active: {dbg_user.is_active}\n")
+                    f.write(f"Password check: {dbg_user.check_password(password)}\n")
+        except Exception as dbg_err:
+            print(f"Debug logging failed: {dbg_err}")
+
         rate_key = _login_rate_key(email)
 
         if is_limited(rate_key):

@@ -40,6 +40,7 @@ def create_app(config_name='default'):
         if app.config.get('AUTO_CREATE_DB'):
             db.create_all()
             _seed_data()
+        _enforce_single_admin()
             
     # SECURITY IMPLEMENTATION: Error Handling & Data Leak Prevention
     # Masks HTTP 500 internal server errors to prevent the application from leaking
@@ -99,7 +100,7 @@ def _seed_data():
 
     _add_user_if_missing('demo@vetsync.com',           'Demo',  'User',         '0000000000', 'client',  'demo123')
     _add_user_if_missing('adminvetclinic@gmail.com',   'Admin', 'VetSync',      '0000000001', 'admin',   'vetadminclinic1214')
-    _add_user_if_missing('veterinarian123@gmail.com',  'Staff', 'Veterinarian', '0000000002', 'staff',   'vet121516')
+    _add_user_if_missing('veterinarian123@gmail.com',  'Staff', 'Staff',        '0000000002', 'staff',   'vet121516')
 
     db.session.commit()
 
@@ -110,3 +111,56 @@ def _add_user_if_missing(email, first, last, contact, role, password):
         u = User(first_name=first, last_name=last, email=email, contact=contact, role=role) # type: ignore
         u.set_password(password)
         db.session.add(u)
+
+
+def _enforce_single_admin():
+    """Ensure only one admin account exists (adminvetclinic@gmail.com).
+    Removes any other admin-role accounts and guarantees the canonical
+    admin credentials are always correct.
+    """
+    from app.models.user import User
+    ADMIN_EMAIL    = 'adminvetclinic@gmail.com'
+    ADMIN_PASSWORD = 'vetadminclinic1214'
+
+    # Ensure the canonical admin exists
+    admin = User.query.filter_by(email=ADMIN_EMAIL).first()
+    if not admin:
+        admin = User(
+            first_name='Admin',
+            last_name='VetSync',
+            email=ADMIN_EMAIL,
+            contact='0000000001',
+            role='admin',
+            is_active=True
+        )
+        admin.set_password(ADMIN_PASSWORD)
+        db.session.add(admin)
+        db.session.commit()
+        print(f'[BOOT] Canonical admin account created: {ADMIN_EMAIL}')
+    else:
+        # Always ensure admin account is active, has the right role, and correct password
+        changed = False
+        if admin.role != 'admin':
+            admin.role = 'admin'
+            changed = True
+        if not admin.is_active:
+            admin.is_active = True
+            changed = True
+        if not admin.check_password(ADMIN_PASSWORD):
+            admin.set_password(ADMIN_PASSWORD)
+            changed = True
+        if changed:
+            db.session.commit()
+            print(f'[BOOT] Canonical admin account credentials updated/corrected.')
+
+    # Demote any other admin-role accounts to client to enforce single-admin constraint
+    # while preserving database referential integrity (e.g. audit logs, bookings)
+    extra_admins = User.query.filter(
+        User.role == 'admin',
+        User.email != ADMIN_EMAIL
+    ).all()
+    if extra_admins:
+        for u in extra_admins:
+            print(f'[BOOT] Demoting unauthorized admin account: {u.email}')
+            u.role = 'client'
+        db.session.commit()
