@@ -25,14 +25,23 @@ def create_app(config_name='default'):
     # Register all API blueprints
     register_api(app)
 
-    # Context processor — injects current_user and csrf_token into every template
+    # Context processor — injects current_user, csrf_token, and jwt_token into every template
     @app.context_processor
     def inject_globals():
         from app.models.user import User
         from app.utils.security import generate_csrf_token
+        from app.services.auth_service import create_jwt_token
         uid = session.get('user_id')
         current_user = db.session.get(User, uid) if uid else None
-        return dict(current_user=current_user, csrf_token=generate_csrf_token)
+        
+        jwt_token = ""
+        if current_user:
+            try:
+                jwt_token = create_jwt_token(current_user.id, current_user.role)
+            except Exception as jwt_err:
+                print(f"[JWT Context Processor Error]: {jwt_err}")
+                
+        return dict(current_user=current_user, csrf_token=generate_csrf_token, jwt_token=jwt_token)
 
     # Run dynamic schema migrations on application startup
     with app.app_context():

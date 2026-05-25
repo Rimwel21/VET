@@ -2,6 +2,9 @@ from datetime import datetime
 from app.extensions import db
 
 
+# Security Navigation:
+# - SQL injection protection here comes from ORM-backed model usage.
+# - Sensitive booking and medical fields are grouped below for easier review.
 # VETSYNC SECURITY MATRIX: SQL Injection (SQLi) Prevention
 # All database operations on the Booking model (such as appointment creation, alt phone logging,
 # and risk assessment checks) are executed using SQLAlchemy ORM (db.Model). This automatically
@@ -17,14 +20,14 @@ class Booking(db.Model):
     slot            = db.Column(db.String(20),  nullable=False)
     date            = db.Column(db.Date,        nullable=False)
 
-    # Owner info
+    # Owner info: personally identifiable information
     name            = db.Column(db.String(120), nullable=False)
     email           = db.Column(db.String(120), nullable=False)
     phone           = db.Column(db.String(30),  nullable=False)
     alt_phone       = db.Column(db.String(30))
     address         = db.Column(db.String(255))
 
-    # Pet info
+    # Pet info: operational records used during appointment handling
     pet_name        = db.Column(db.String(80))
     pet_type        = db.Column(db.String(50),  nullable=False)
     pet_breed       = db.Column(db.String(100))
@@ -33,13 +36,13 @@ class Booking(db.Model):
     pet_weight      = db.Column(db.String(20))
     pet_color       = db.Column(db.String(100))
 
-    # Medical
+    # Medical: higher-sensitivity health-related data
     visit_reason    = db.Column(db.Text)
     medical_history = db.Column(db.Text)
     allergies       = db.Column(db.String(255))
     notes           = db.Column(db.Text)
 
-    # Payment & consent
+    # Payment & consent: workflow and legal acknowledgement fields
     payment_method  = db.Column(db.String(50))
     consent         = db.Column(db.Boolean, default=False)
 
@@ -51,6 +54,7 @@ class Booking(db.Model):
 
     @property
     def no_show_risk(self):
+        # Derived values are computed from existing records rather than trusting client input.
         """Calculates risk based on client's past cancellations."""
         cancellations = Booking.query.filter_by(email=self.email, status='cancelled').count()
         return cancellations > 1

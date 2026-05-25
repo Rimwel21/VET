@@ -2,6 +2,9 @@ import os
 from datetime import timedelta
 
 class Config:
+    # Security Navigation:
+    # - App and JWT secrets are configured here.
+    # - Session cookie behavior and HTTPS enforcement are also defined here.
     SECRET_KEY = os.getenv('SECRET_KEY', 'vetsync-secret-key-2024')
     _database_url = os.getenv(
         'DATABASE_URL',
@@ -11,12 +14,14 @@ class Config:
         _database_url = _database_url.replace('postgres://', 'postgresql://', 1)
     SQLALCHEMY_DATABASE_URI = _database_url
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    # Pool health checks support availability by recycling stale DB connections.
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,
         "pool_recycle": 300,
     }
     AUTO_CREATE_DB = os.getenv('AUTO_CREATE_DB', 'false').lower() == 'true'
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'supergit-secret-jwt-key')
+    # Short-lived JWTs reduce the impact of token theft.
     JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=15)
 
     MAIL_SERVER = 'smtp.gmail.com'
@@ -54,6 +59,7 @@ class Config:
 
 
 class DevelopmentConfig(Config):
+    # Development keeps secure-cookie enforcement relaxed for local HTTP testing.
     DEBUG = True
     SESSION_COOKIE_SECURE = False
     AUTO_CREATE_DB = os.getenv('AUTO_CREATE_DB', 'false').lower() == 'true'

@@ -7,7 +7,8 @@ def register_security_hooks(app):
     @app.before_request
     def verify_request_safety():
         from app.utils.security import verify_csrf_token
-        
+
+        # Central request gate: every mutating request passes through these checks.
         # 1. CSRF Protection (Global Enforcement)
         verify_csrf_token()
 
@@ -16,12 +17,12 @@ def register_security_hooks(app):
             return redirect(request.url.replace('http://', 'https://', 1), code=301)
 
         # SECURITY IMPLEMENTATION: Unauthorized Access & Session Hijacking Protection
-        # Verifies the continuity of the request IP address and User-Agent signature.
-        # If the environment shifts (indicating possible cookie theft or session fixation),
-        # the session is immediately invalidated to protect user data access.
+        # Verifies the continuity of the request IP address.
+        # User-Agent is intentionally NOT checked because browser extensions and
+        # internal Chrome/Edge requests (e.g., DevTools, PWA checks) send different
+        # User-Agent strings on the same connection, causing false-positive session kills.
         if 'user_id' in session:
-            if (session.get('ip') != request.remote_addr or
-                    session.get('user_agent') != request.headers.get('User-Agent')):
+            if session.get('ip') != request.remote_addr:
                 session.clear()
                 flash('Security Alert: Session terminated due to suspicious activity.', 'error')
                 return redirect(url_for('auth.login'))
@@ -29,6 +30,7 @@ def register_security_hooks(app):
     @app.after_request
     def add_security_headers(response):
         """Adds production-grade security headers to every response."""
+        # These headers reduce common browser-side attack surfaces.
         response.headers['X-Content-Type-Options'] = 'nosniff'
         response.headers['X-Frame-Options'] = 'SAMEORIGIN'
         response.headers['X-XSS-Protection'] = '1; mode=block'
@@ -48,8 +50,10 @@ def register_security_hooks(app):
 
 
 def _https_required(app):
+    # Keeps HTTPS enforcement configurable between development and production.
     return bool(app.config.get('ENFORCE_HTTPS'))
 
 
 def _request_is_secure():
+    # Supports direct HTTPS and proxy-forwarded HTTPS deployments.
     return request.is_secure or request.headers.get('X-Forwarded-Proto', '').lower() == 'https'

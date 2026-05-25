@@ -4,6 +4,9 @@ from app.extensions import db
 from app.services.auth_service import decode_jwt_token
 
 
+# Security Navigation:
+# - Session-based page protection starts with login_required/admin_required/staff_required.
+# - Token-based API protection starts with jwt_required/role_required.
 def _get_current_user():
     from app.models.user import User
     uid = session.get('user_id')
@@ -13,6 +16,7 @@ def _get_current_user():
 def login_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
+        # Page routes rely on the server-side session cookie for authentication.
         if not _get_current_user():
             flash('Please log in to access that page.', 'error')
             return redirect(url_for('auth.login', next=request.url))
@@ -27,6 +31,7 @@ def login_required(f):
 def admin_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
+        # This is the hard gate for admin-only pages.
         user = _get_current_user()
         if not user or user.role != 'admin':
             flash('Access denied: Admins only.', 'error')
@@ -38,6 +43,7 @@ def admin_required(f):
 def staff_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
+        # Staff-only pages are isolated from client and admin-only flows here.
         user = _get_current_user()
         if not user or user.role != 'staff':
             flash('Access denied: Staff only.', 'error')
@@ -53,10 +59,12 @@ def jwt_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         from app.models.user import User
+        # API callers must present a Bearer token instead of relying on browser sessions.
         token = _extract_bearer_token()
         if not token:
             return jsonify({'message': 'Token is missing!'}), 401
 
+        # Token decoding verifies signature and expiry before user lookup.
         decoded, status = decode_jwt_token(token)
         if status != 200:
             return jsonify(decoded), status
@@ -79,6 +87,7 @@ def role_required(roles):
             from app.models.user import User
             token = _extract_bearer_token()
             if not token:
+                # Some endpoints accept either a browser session or an API token.
                 user = _get_current_user()
                 if not user:
                     return jsonify({'message': 'Token is missing!'}), 401
@@ -104,6 +113,7 @@ def role_required(roles):
 
 
 def _extract_bearer_token():
+    # Authorization: Bearer <token>
     auth_header = request.headers.get('Authorization', '')
     parts = auth_header.split()
     if len(parts) == 2 and parts[0] == 'Bearer':

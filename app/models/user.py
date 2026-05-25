@@ -3,6 +3,9 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from app.extensions import db
 
 
+# Security Navigation:
+# - Password hashing is defined in set_password/check_password.
+# - Privacy consent fields are stored on the model for auditability.
 # VETSYNC SECURITY MATRIX: SQL Injection (SQLi) Prevention
 # All database operations on the User model are performed via SQLAlchemy's ORM (db.Model).
 # This enforces strict query parameterization globally. User-supplied inputs (like email, 
@@ -11,6 +14,7 @@ from app.extensions import db
 class User(db.Model):
     __tablename__ = 'users'
 
+    # Identity and access fields
     id            = db.Column(db.Integer, primary_key=True)
     first_name    = db.Column(db.String(80),  nullable=False)
     last_name     = db.Column(db.String(80),  nullable=False)
@@ -27,24 +31,23 @@ class User(db.Model):
     privacy_consent    = db.Column(db.Boolean,     default=False)
     privacy_consent_at = db.Column(db.DateTime,    nullable=True)
     
+    # Audit and relationship metadata
     created_at         = db.Column(db.DateTime,    default=datetime.utcnow)
 
     bookings      = db.relationship('Booking',      backref='user', lazy=True)
     notifications = db.relationship('Notification', backref='user', lazy=True)
 
     def __init__(self, first_name=None, last_name=None, email=None, contact=None, role='client', is_active=True, push_enabled=True, privacy_consent=False, privacy_consent_at=None, **kwargs):
-        super().__init__(
-            first_name=first_name,
-            last_name=last_name,
-            email=email,
-            contact=contact,
-            role=role,
-            is_active=is_active,
-            push_enabled=push_enabled,
-            privacy_consent=privacy_consent,
-            privacy_consent_at=privacy_consent_at,
-            **kwargs
-        )
+        super().__init__(**kwargs)
+        self.first_name = first_name
+        self.last_name = last_name
+        self.email = email
+        self.contact = contact
+        self.role = role
+        self.is_active = is_active
+        self.push_enabled = push_enabled
+        self.privacy_consent = privacy_consent
+        self.privacy_consent_at = privacy_consent_at
 
     # VETSYNC SECURITY MATRIX: Password Hashing (Salted & Encrypted)
     # Standard passwords are never stored in raw text. They are immediately salted 
@@ -54,5 +57,6 @@ class User(db.Model):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
+        # Password verification compares the submitted plaintext to the stored hash.
         return check_password_hash(self.password_hash, password)
 

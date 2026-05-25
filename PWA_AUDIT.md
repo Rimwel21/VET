@@ -24,6 +24,8 @@ navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
 
 Impact: the worker can now control full app navigation, not only static assets. This is required for reliable offline fallback and app-shell behavior.
 
+Note: the app uses a dedicated offline fallback route at `/offline` (served by `app/routes/main.py`) rather than `/offline.html`, and the service worker is registered via Flask's route helper in the templates to ensure correct deployment scope.
+
 ### Real caching and offline strategies
 
 Rebuilt `app/static/service-worker.js` with:

@@ -1,3 +1,12 @@
+// ===================== JWT AUTO-PERSIST =====================
+(function() {
+    const metaToken = document.querySelector('meta[name="jwt-token"]');
+    if (metaToken && metaToken.content) {
+        localStorage.setItem('access_token', metaToken.content);
+        console.log('[JWT] Token successfully persisted from page meta.');
+    }
+})();
+
 // ===================== SECURITY UTILITIES =====================
 function escapeHTML(str) {
     if (!str) return "";

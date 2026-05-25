@@ -12,9 +12,13 @@ auth_bp = Blueprint('auth', __name__)
 EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
 
 
+# Security Navigation:
+# - Signup validation and privacy consent live here.
+# - Login throttling, session setup, and JWT issuance also start here.
 @auth_bp.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
+        # Input normalization reduces malformed or unsafe values before validation.
         fn  = clean_input(request.form.get('first_name', ''))
         ln  = clean_input(request.form.get('last_name', ''))
         em  = clean_input(request.form.get('email', '').lower())
@@ -22,6 +26,7 @@ def signup():
         pw  = request.form.get('password', '')
         pw2 = request.form.get('re_password', '')
 
+        # Basic server-side validation ensures the client cannot bypass form rules.
         if not EMAIL_RE.match(em):
             flash('Please enter a valid email address.', 'error')
             return render_template('signup.html')
@@ -46,7 +51,8 @@ def signup():
             flash('You must accept the Privacy Notice and Terms of Service to register.', 'error')
             return render_template('signup.html')
             
-        # Check for successful OTP verification in the last 10 minutes
+        # OTP verification proves the requester controls the submitted email address.
+        # The time window keeps old verifications from being reused indefinitely.
         from app.models.otp_verification import OtpVerification
         from datetime import datetime, timedelta
         
@@ -61,7 +67,7 @@ def signup():
             flash('Email verification required.', 'error')
             return render_template('signup.html')
 
-        # Create user
+        # Only after validation, consent, and OTP verification do we create the account.
         user = User(
             first_name=fn,
             last_name=ln,
@@ -95,34 +101,24 @@ def login():
         else:
             data = request.form
 
+        # Email is normalized before both rate limiting and account lookup so a caller
+        # cannot bypass protections with case or formatting variations.
         email    = clean_input(data.get('email', '').lower())
         password = data.get('password', '')
-        
-        # DEBUG: Log the exact received inputs to identify any mismatches
-        try:
-            with open('scratch/login_debug.log', 'a', encoding='utf-8') as f:
-                f.write(f"--- Login Attempt ---\n")
-                f.write(f"Received email: {repr(email)}\n")
-                f.write(f"Received password: {repr(password)}\n")
-                dbg_user = User.query.filter_by(email=email).first()
-                f.write(f"User found: {dbg_user is not None}\n")
-                if dbg_user:
-                    f.write(f"User active: {dbg_user.is_active}\n")
-                    f.write(f"Password check: {dbg_user.check_password(password)}\n")
-        except Exception as dbg_err:
-            print(f"Debug logging failed: {dbg_err}")
-
         rate_key = _login_rate_key(email)
 
+        # Rate limiting slows brute-force attacks against the login endpoint.
         if is_limited(rate_key):
             if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 return jsonify({'error': 'Too many failed login attempts. Please try again later.'}), 429
             flash('Too many failed login attempts. Please try again later.', 'error')
             return render_template('login.html'), 429
 
+        # ORM-based lookup keeps the query parameterized instead of interpolating input.
         user     = User.query.filter_by(email=email).first()
 
         if user and user.check_password(password):
+            # Deactivated accounts are blocked even when credentials are correct.
             if not user.is_active:
                 if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return jsonify({'error': 'Your account has been deactivated.'}), 403
@@ -137,7 +133,6 @@ def login():
             session.clear()
             session['user_id']   = user.id
             session['ip']        = request.remote_addr
-            session['user_agent']= request.headers.get('User-Agent')
             session.permanent    = True
             clear_attempts(rate_key)
             log_action('Auth Success', f'Secure login established for {user.role}: {user.first_name} {user.last_name}', user=user)
@@ -147,6 +142,7 @@ def login():
             # and RBAC credentials, enabling safe cross-origin client and PWA application accesses.
             access_token = create_jwt_token(user.id, user.role)
 
+            # The next URL is constrained to local paths to avoid open redirect issues.
             next_url = request.args.get('next')
             if not next_url or not next_url.startswith('/'):
                 if user.role == 'admin':
@@ -168,6 +164,7 @@ def login():
             flash(f'Welcome back, {user.first_name}!', 'success')
             return redirect(next_url)
         else:
+            # Failed attempts are recorded on every invalid login path.
             if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                 record_failure(rate_key)
                 return jsonify({'error': 'Invalid email or password.'}), 401
