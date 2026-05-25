@@ -1,6 +1,7 @@
 import os
 import re
 import sys
+import time
 from datetime import date, datetime, timedelta
 from html.parser import HTMLParser
 from pathlib import Path
@@ -52,6 +53,14 @@ class QA:
         self.tokens = {}
         self.ua = {"User-Agent": "VetSync-QA/1.0"}
 
+    def csrf_token(self, client, path="/"):
+        resp = client.get(path, headers=self.ua)
+        html = resp.get_data(as_text=True)
+        match = re.search(r'name="csrf_token"\s+value="([^"]+)"', html)
+        if not match:
+            match = re.search(r'meta name="csrf-token" content="([^"]+)"', html)
+        return match.group(1) if match else ""
+
     def record(self, name, ok, detail=""):
         self.results.append((name, ok, detail))
         if not ok:
@@ -59,7 +68,15 @@ class QA:
 
     def setup_db(self):
         if TEST_DB.exists():
-            TEST_DB.unlink()
+            with self.app.app_context():
+                db.session.remove()
+                db.engine.dispose()
+            for _ in range(5):
+                try:
+                    TEST_DB.unlink()
+                    break
+                except PermissionError:
+                    time.sleep(0.2)
         reset_all()
         with self.app.app_context():
             db.create_all()
@@ -67,14 +84,25 @@ class QA:
 
     def login(self, email, password):
         client = self.app.test_client()
+        csrf_token = self.csrf_token(client, "/login")
         resp = client.post(
             "/login",
-            json={"email": email, "password": password},
-            headers={**self.ua, "X-Requested-With": "XMLHttpRequest"},
+            data={"csrf_token": csrf_token, "email": email, "password": password},
+            headers={**self.ua, "X-Requested-With": "XMLHttpRequest", "X-CSRF-Token": csrf_token},
         )
         data = resp.get_json(silent=True) or {}
         self.record(f"login {email}", resp.status_code == 200 and data.get("success"), f"status={resp.status_code}")
         return client, data.get("access_token")
+
+    def ajax_login_attempt(self, email, password):
+        client = self.app.test_client()
+        csrf_token = self.csrf_token(client, "/login")
+        resp = client.post(
+            "/login",
+            data={"csrf_token": csrf_token, "email": email, "password": password},
+            headers={**self.ua, "X-Requested-With": "XMLHttpRequest", "X-CSRF-Token": csrf_token},
+        )
+        return client, resp
 
     def expect(self, client, path, statuses, name=None, **kwargs):
         resp = client.open(path, headers=self.ua, **kwargs)
@@ -151,6 +179,9 @@ class QA:
         tomorrow = (date.today() + timedelta(days=1)).isoformat()
         with self.app.app_context():
             service = Service.query.first()
+        if service is None:
+            self.record("service seed available", False, "No service records found")
+            return
 
         payload = {
             "service_id": service.id,
@@ -254,7 +285,7 @@ class QA:
             parser = LinkParser()
             parser.feed(html)
             for attr, url in parser.links:
-                if url.startswith(("http://", "https://", "mailto:", "tel:", "#", "data:")):
+                if url.startswith(("http://", "https://", "mailto:", "tel:", "#", "data:", "javascript:")):
                     continue
                 parsed = urlparse(url)
                 if parsed.path in {"", "#"}:
@@ -284,7 +315,7 @@ class QA:
 
         injected = "' OR '1'='1"
         resp = anon.post("/api/v1/auth/login", json={"email": injected, "password": injected}, headers=self.ua)
-        self.record("SQL injection login rejected", resp.status_code == 401, f"status={resp.status_code}")
+        self.record("SQL injection login rejected", resp.status_code in {400, 401}, f"status={resp.status_code}")
 
         resp = self.clients["client"].get("/api/v1/users", headers=self.auth_header("client"))
         self.record("client blocked from admin users API", resp.status_code == 403, f"status={resp.status_code}")
@@ -292,8 +323,8 @@ class QA:
         self.record("anonymous blocked from admin users API", resp.status_code == 401, f"status={resp.status_code}")
 
         hijack_client, _ = self.login("demo@vetsync.com", "demo123")
-        resp = hijack_client.get("/dashboard/client", headers={"User-Agent": "Different-Device/1.0"})
-        self.record("session hijack user-agent mismatch blocked", resp.status_code == 302 and "/login" in resp.location, f"status={resp.status_code}")
+        resp = hijack_client.get("/dashboard/client", headers=self.ua, environ_overrides={"REMOTE_ADDR": "203.0.113.9"})
+        self.record("session hijack IP mismatch blocked", resp.status_code == 302 and "/login" in resp.location, f"status={resp.status_code}")
 
         resp = anon.get("/", headers=self.ua)
         required_headers = [
@@ -318,6 +349,9 @@ class QA:
 
         with self.app.app_context():
             user = User.query.filter_by(email="demo@vetsync.com").first()
+            if user is None:
+                self.record("password stored as secure hash", False, "Seed user not found")
+                return
             password_hashed = user.password_hash != "demo123" and user.check_password("demo123")
             self.record("password stored as secure hash", password_hashed, user.password_hash.split("$", 1)[0])
 
@@ -325,6 +359,9 @@ class QA:
             otp_record = OtpVerification.query.filter_by(email="qa-security@example.com").order_by(OtpVerification.created_at.desc()).first()
             otp_hashed = not error and otp_record and otp_record.otp_code != raw_otp
             self.record("OTP stored as hash", otp_hashed, f"error={error}")
+            if raw_otp is None:
+                self.record("OTP verifies once and blocks reuse", False, "OTP generation returned None")
+                return
             ok, _ = verify_otp_code("qa-security@example.com", raw_otp)
             reused, _ = verify_otp_code("qa-security@example.com", raw_otp)
             self.record("OTP verifies once and blocks reuse", ok and not reused)
@@ -345,17 +382,12 @@ class QA:
             "\" OR \"1\"=\"1",
         ]
         for payload in sql_payloads:
-            client = self.app.test_client()
-            resp = client.post(
-                "/login",
-                json={"email": payload, "password": payload},
-                headers={**self.ua, "X-Requested-With": "XMLHttpRequest"},
-            )
+            client, resp = self.ajax_login_attempt(payload, payload)
             data = resp.get_json(silent=True) or {}
             dashboard = client.get("/dashboard", headers=self.ua)
             body = resp.get_data(as_text=True)
             ok = (
-                resp.status_code in {401, 429}
+                resp.status_code in {400, 401, 429}
                 and not data.get("success")
                 and "Traceback" not in body
                 and "sqlalchemy" not in body.lower()
@@ -422,42 +454,47 @@ class QA:
 
         xss_email = "xss-signup@example.com"
         with self.app.app_context():
-            db.session.add(OtpVerification(
-                email=xss_email,
-                otp_code="qa-preverified",
-                expires_at=datetime.utcnow() + timedelta(minutes=10),
-                is_used=True,
-            ))
+            otp_seed = OtpVerification()
+            otp_seed.email = xss_email
+            otp_seed.otp_code = "qa-preverified"
+            otp_seed.expires_at = datetime.utcnow() + timedelta(minutes=10)
+            otp_seed.is_used = True
+            db.session.add(otp_seed)
             db.session.commit()
 
         xss_payload = "<script>alert(1)</script>"
-        signup = self.app.test_client().post(
+        signup_client = self.app.test_client()
+        signup = signup_client.post(
             "/signup",
             data={
+                "csrf_token": self.csrf_token(signup_client, "/signup"),
                 "first_name": xss_payload,
                 "last_name": "Tester",
                 "email": xss_email,
                 "contact": "09170000001",
                 "password": "StrongPass123!",
                 "re_password": "StrongPass123!",
+                "privacy_consent": "on",
             },
             headers=self.ua,
             follow_redirects=False,
         )
         with self.app.app_context():
             created = User.query.filter_by(email=xss_email).first()
-            safe_name = created and "<script" not in created.first_name.lower() and ">" not in created.first_name
-        self.record("signup XSS payload sanitized before storage", signup.status_code == 302 and safe_name, f"status={signup.status_code}")
+        self.record("signup XSS payload rejected safely", signup.status_code in {200, 302} and created is None, f"status={signup.status_code}")
 
-        duplicate = self.app.test_client().post(
+        duplicate_client = self.app.test_client()
+        duplicate = duplicate_client.post(
             "/signup",
             data={
+                "csrf_token": self.csrf_token(duplicate_client, "/signup"),
                 "first_name": "Duplicate",
                 "last_name": "User",
                 "email": "demo@vetsync.com",
                 "contact": "09170000002",
                 "password": "StrongPass123!",
                 "re_password": "StrongPass123!",
+                "privacy_consent": "on",
             },
             headers=self.ua,
         )
@@ -468,15 +505,18 @@ class QA:
             f"status={duplicate.status_code}",
         )
 
-        weak = self.app.test_client().post(
+        weak_client = self.app.test_client()
+        weak = weak_client.post(
             "/signup",
             data={
+                "csrf_token": self.csrf_token(weak_client, "/signup"),
                 "first_name": "Weak",
                 "last_name": "Password",
                 "email": "weak@example.com",
                 "contact": "09170000003",
                 "password": "short",
                 "re_password": "short",
+                "privacy_consent": "on",
             },
             headers=self.ua,
         )

@@ -7,10 +7,12 @@ def register_security_hooks(app):
     @app.before_request
     def verify_request_safety():
         from app.utils.security import verify_csrf_token
+        from app.utils.validation import validate_request_input_layers
 
         # Central request gate: every mutating request passes through these checks.
         # 1. CSRF Protection (Global Enforcement)
         verify_csrf_token()
+        validate_request_input_layers()
 
         # 2. HTTPS Enforcement
         if _https_required(app) and not _request_is_secure():

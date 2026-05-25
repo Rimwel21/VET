@@ -42,6 +42,7 @@ class Config:
     SESSION_COOKIE_SAMESITE = 'Lax'
     PERMANENT_SESSION_LIFETIME = timedelta(hours=2)
     ENFORCE_HTTPS = os.getenv('ENFORCE_HTTPS', 'false').lower() == 'true'
+    MAX_CONTENT_LENGTH = int(os.getenv('MAX_CONTENT_LENGTH', 2 * 1024 * 1024))
 
 
     VAPID_PUBLIC_KEY = os.getenv(

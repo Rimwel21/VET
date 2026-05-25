@@ -16,11 +16,15 @@ class Booking(db.Model):
     id              = db.Column(db.Integer, primary_key=True)
 
     # Appointment
+    # SECURITY: Appointment fields are system-controlled workflow values.
+    # These are validated before persistence so users cannot inject arbitrary state transitions.
     service_id      = db.Column(db.Integer, db.ForeignKey('services.id'), nullable=False)
     slot            = db.Column(db.String(20),  nullable=False)
     date            = db.Column(db.Date,        nullable=False)
 
     # Owner info: personally identifiable information
+    # SECURITY: Personal identity/contact fields are protected by route-level validation
+    # and ORM-backed storage to reduce injection and data-integrity risks.
     name            = db.Column(db.String(120), nullable=False)
     email           = db.Column(db.String(120), nullable=False)
     phone           = db.Column(db.String(30),  nullable=False)
@@ -37,6 +41,8 @@ class Booking(db.Model):
     pet_color       = db.Column(db.String(100))
 
     # Medical: higher-sensitivity health-related data
+    # SECURITY: Medical narrative fields accept legitimate clinical text but are still
+    # passed through centralized validation to block malicious scripts and payloads.
     visit_reason    = db.Column(db.Text)
     medical_history = db.Column(db.Text)
     allergies       = db.Column(db.String(255))
@@ -47,6 +53,7 @@ class Booking(db.Model):
     consent         = db.Column(db.Boolean, default=False)
 
     # Meta
+    # SECURITY: Booking status and handler metadata support workflow integrity and auditing.
     status          = db.Column(db.String(20),  default='pending')
     user_id         = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True)
     handled_by      = db.Column(db.String(100), nullable=True)

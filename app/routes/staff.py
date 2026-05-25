@@ -8,6 +8,7 @@ from app.models.booking import Booking
 from app.models.report import Report
 from app.models.audit_log import AuditLog
 from app.utils.logger import log_action
+from app.utils.validation import FieldSpec, ValidationError, validate_fields
 from app.models.availability import DoctorAvailability
 from app.models.user import User
 from app.middleware.decorators import login_required, admin_required, staff_required, _get_current_user
@@ -111,8 +112,20 @@ def edit_report(id):
     if report.user_id != user.id:
         return jsonify({'error': 'Unauthorized'}), 403
 
-    new_title = (request.form.get("title") or (request.json.get("title") if request.is_json else None)) or report.title
-    new_desc = (request.form.get("content") or (request.json.get("content") if request.is_json else None)) or report.description
+    source = request.get_json(silent=True) or {} if request.is_json else request.form
+    try:
+        payload = validate_fields(source, {
+            'title': FieldSpec(required=False, max_length=150),
+            'content': FieldSpec(required=False, max_length=4000, allow_newlines=True),
+        })
+    except ValidationError as exc:
+        if request.is_json or request.headers.get('Accept') == 'application/json':
+            return jsonify({'error': exc.message, 'field': exc.field}), exc.code
+        flash(exc.message, 'error')
+        return redirect(url_for('staff.submitted_reports'))
+
+    new_title = payload.get("title") or report.title
+    new_desc = payload.get("content") or report.description
 
     if new_title != report.title or new_desc != report.description:
         # store previous version in history array
@@ -195,8 +208,12 @@ def send_custom_push():
             return jsonify({'error': 'Invalid request body. Expected JSON.'}), 400
 
         user_id = data.get('user_id')
-        title   = (data.get('title')   or '').strip()
-        message = (data.get('message') or '').strip()
+        payload = validate_fields(data, {
+            'title': FieldSpec(required=True, max_length=100),
+            'message': FieldSpec(required=True, max_length=1000, allow_newlines=True),
+        })
+        title = payload['title']
+        message = payload['message']
 
         if not user_id or not title or not message:
             return jsonify({'error': 'All fields (recipient, title, message) are required.'}), 400
@@ -220,6 +237,8 @@ def send_custom_push():
         else:
             return jsonify({'error': 'Notification could not be sent — client subscription invalid.'}), 422
 
+    except ValidationError as exc:
+        return jsonify({'error': exc.message, 'field': exc.field}), exc.code
     except ValueError:
         return jsonify({'error': 'Invalid user ID format.'}), 400
     except Exception as e:
@@ -399,7 +418,7 @@ def availability():
         blocks = DoctorAvailability.query.all()
         return jsonify([{'date': b.date.isoformat(), 'slot': b.slot, 'status': b.status} for b in blocks])
 
-    data = request.get_json()
+    data = request.get_json() or {}
     target_date = data.get('date')
     slot        = data.get('slot')
 

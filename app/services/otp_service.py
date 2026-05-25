@@ -1,5 +1,6 @@
 import secrets
 from datetime import datetime, timedelta
+from typing import Optional
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import current_app
 from flask_mail import Message
@@ -10,7 +11,8 @@ def generate_secure_otp() -> str:
     """Generate a secure 6-digit numeric OTP."""
     return "".join(secrets.choice("0123456789") for _ in range(6))
 
-def create_otp(email: str, user_id: int = None):
+
+def create_otp(email: str, user_id: Optional[int] = None) -> tuple[Optional[str], Optional[str]]:
     """
     Generate, hash, and store a new OTP.
     Includes rate limiting: max 3 requests per minute per email.
@@ -30,19 +32,18 @@ def create_otp(email: str, user_id: int = None):
     
     expires_at = datetime.utcnow() + timedelta(minutes=5)
     
-    otp_entry = OtpVerification(
-        email=email,
-        user_id=user_id,
-        otp_code=hashed_otp,
-        expires_at=expires_at
-    )
+    otp_entry = OtpVerification()
+    otp_entry.email = email
+    otp_entry.user_id = user_id
+    otp_entry.otp_code = hashed_otp
+    otp_entry.expires_at = expires_at
     
     db.session.add(otp_entry)
     db.session.commit()
     
     return raw_otp, None
 
-def verify_otp_code(email: str, raw_otp: str):
+def verify_otp_code(email: str, raw_otp: str) -> tuple[bool, str]:
     """
     Verify the provided OTP for the given email.
     Checks for expiration, usage, and brute force attempts.
@@ -71,7 +72,7 @@ def verify_otp_code(email: str, raw_otp: str):
         remaining = 5 - otp_record.attempts
         return False, f"Invalid OTP. {remaining} attempts remaining."
 
-def verify_reset_otp(email: str, raw_otp: str):
+def verify_reset_otp(email: str, raw_otp: str) -> tuple[Optional[str], str]:
     """
     Verify OTP for password reset and issue a short-lived reset token.
     """
@@ -95,7 +96,7 @@ def verify_reset_otp(email: str, raw_otp: str):
         
     return token, "OTP verified. You can now reset your password."
 
-def reset_password_with_token(email: str, token: str, new_password: str):
+def reset_password_with_token(email: str, token: str, new_password: str) -> tuple[bool, str]:
     """
     Finalize password reset using the issued token.
     """
@@ -126,7 +127,7 @@ def reset_password_with_token(email: str, token: str, new_password: str):
     db.session.commit()
     return True, "Password reset successfully."
 
-def send_otp_email(email: str, otp: str):
+def send_otp_email(email: str, otp: str) -> bool:
     """Send the OTP via email using Flask-Mail."""
     msg = Message(
         subject="VetCare Pro Verification Code",

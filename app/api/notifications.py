@@ -4,6 +4,7 @@ from app.models.user import User
 from app.models.notification import Notification
 from app.middleware.decorators import jwt_required
 from app.services.push_service import send_push_notification
+from app.utils.validation import FieldSpec, ValidationError, validate_fields
 
 api_notifications_bp = Blueprint('api_notifications', __name__)
 
@@ -21,9 +22,17 @@ def notifications(current_user_jwt):
             'read': n.read, 'created_at': n.created_at.isoformat()
         } for n in items]), 200
 
-    data    = request.get_json()
-    title   = data.get('title')
-    message = data.get('message')
+    data = request.get_json() or {}
+    try:
+        payload = validate_fields(data, {
+            'title': FieldSpec(required=True, max_length=100),
+            'message': FieldSpec(required=True, max_length=2000, allow_newlines=True),
+        })
+    except ValidationError as exc:
+        return jsonify({'error': exc.message, 'field': exc.field}), exc.code
+
+    title = payload['title']
+    message = payload['message']
     if not title or not message:
         return jsonify({'error': 'Title and message are required'}), 400
 

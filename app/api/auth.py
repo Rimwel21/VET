@@ -7,7 +7,7 @@ from app.services.otp_service import (
     verify_reset_otp, reset_password_with_token
 )
 from app.services.rate_limiter import clear_attempts, is_limited, record_failure
-from app.utils.sanitize import clean_input
+from app.utils.validation import ValidationError, validate_email, validate_password
 
 api_auth_bp = Blueprint('api_auth', __name__)
 EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
@@ -16,7 +16,10 @@ EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
 @api_auth_bp.route('/login', methods=['POST'])
 def api_login():
     data     = request.get_json(silent=True) or {}
-    email    = clean_input(data.get('email', '').strip().lower())
+    try:
+        email = validate_email(data.get('email', ''), field='email')
+    except ValidationError:
+        return jsonify({'message': 'Invalid credentials'}), 401
     password = data.get('password', '')
     rate_key = _login_rate_key(email)
 
@@ -38,7 +41,10 @@ def api_login():
 @api_auth_bp.route('/send-otp', methods=['POST'])
 def send_otp_endpoint():
     data = request.get_json() or {}
-    email = clean_input(data.get('email', '').strip().lower())
+    try:
+        email = validate_email(data.get('email', ''), field='email')
+    except ValidationError as exc:
+        return jsonify({'message': exc.message}), exc.code
     
     if not email or not EMAIL_RE.match(email):
         return jsonify({'message': 'A valid email is required'}), 400
@@ -46,6 +52,8 @@ def send_otp_endpoint():
     raw_otp, error = create_otp(email)
     if error:
         return jsonify({'message': error}), 429 if "Rate limit" in error else 400
+    if raw_otp is None:
+        return jsonify({'message': 'Failed to generate OTP'}), 500
         
     if send_otp_email(email, raw_otp):
         return jsonify({'message': 'OTP sent successfully'}), 200
@@ -62,7 +70,10 @@ def send_otp_endpoint():
 @api_auth_bp.route('/verify-otp', methods=['POST'])
 def verify_otp_endpoint():
     data = request.get_json() or {}
-    email = clean_input(data.get('email', '').strip().lower())
+    try:
+        email = validate_email(data.get('email', ''), field='email')
+    except ValidationError as exc:
+        return jsonify({'message': exc.message}), exc.code
     otp = data.get('otp', '').strip()
     
     if not email or not otp:
@@ -78,7 +89,10 @@ def verify_otp_endpoint():
 @api_auth_bp.route('/forgot-password', methods=['POST'])
 def forgot_password_endpoint():
     data = request.get_json() or {}
-    email = clean_input(data.get('email', '').strip().lower())
+    try:
+        email = validate_email(data.get('email', ''), field='email')
+    except ValidationError as exc:
+        return jsonify({'message': exc.message}), exc.code
     
     if not email:
         return jsonify({'message': 'Email is required'}), 400
@@ -88,7 +102,7 @@ def forgot_password_endpoint():
     
     if user:
         raw_otp, error = create_otp(email, user_id=user.id)
-        if not error:
+        if not error and raw_otp is not None:
             send_otp_email(email, raw_otp)
             
     # Always return success message for security
@@ -98,7 +112,10 @@ def forgot_password_endpoint():
 @api_auth_bp.route('/verify-reset-otp', methods=['POST'])
 def verify_reset_otp_endpoint():
     data = request.get_json() or {}
-    email = clean_input(data.get('email', '').strip().lower())
+    try:
+        email = validate_email(data.get('email', ''), field='email')
+    except ValidationError as exc:
+        return jsonify({'message': exc.message}), exc.code
     otp = data.get('otp', '').strip()
     
     if not email or not otp:
@@ -114,9 +131,12 @@ def verify_reset_otp_endpoint():
 @api_auth_bp.route('/reset-password', methods=['POST'])
 def reset_password_endpoint():
     data = request.get_json() or {}
-    email = clean_input(data.get('email', '').strip().lower())
+    try:
+        email = validate_email(data.get('email', ''), field='email')
+        new_password = validate_password(data.get('new_password', ''), field='new_password')
+    except ValidationError as exc:
+        return jsonify({'message': exc.message}), exc.code
     token = data.get('token', '').strip()
-    new_password = data.get('new_password', '')
     confirm_password = data.get('confirm_password', '')
     
     if not email or not token or not new_password:

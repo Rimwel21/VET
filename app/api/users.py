@@ -3,6 +3,12 @@ from app.extensions import db
 from app.models.user import User
 from app.middleware.decorators import role_required
 from app.utils.logger import log_action
+from app.utils.validation import (
+    FieldSpec,
+    ValidationError,
+    validate_fields,
+    validate_password,
+)
 
 api_users_bp = Blueprint('api_users', __name__)
 
@@ -20,11 +26,23 @@ def manage_users(current_user_jwt):
             'email': u.email, 'role': u.role, 'contact': u.contact, 'is_active': u.is_active
         } for u in users]), 200
 
-    data = request.get_json()
-    em   = data.get('email', '').strip().lower()
+    data = request.get_json() or {}
+    try:
+        payload = validate_fields(data, {
+            'first_name': FieldSpec(kind='name', required=True, max_length=80),
+            'last_name': FieldSpec(kind='name', required=True, max_length=80),
+            'email': FieldSpec(kind='email', required=True, max_length=120, escape_html=False),
+            'contact': FieldSpec(kind='phone', required=False, max_length=30, escape_html=False),
+            'role': FieldSpec(required=False, max_length=20, escape_html=False),
+        })
+        password = validate_password(data.get('password', 'default123'))
+    except ValidationError as exc:
+        return jsonify({'error': exc.message, 'field': exc.field}), exc.code
+
+    em = payload['email']
 
     # Block creation of admin accounts via API
-    requested_role = data.get('role', 'staff')
+    requested_role = payload.get('role') or 'staff'
     if requested_role == 'admin':
         return jsonify({'error': 'Creation of admin accounts is not permitted.'}), 403
 
@@ -36,13 +54,13 @@ def manage_users(current_user_jwt):
         return jsonify({'error': 'Email already exists'}), 409
 
     new_user = User(
-        first_name=data.get('first_name', ''),
-        last_name=data.get('last_name', ''),
+        first_name=payload['first_name'],
+        last_name=payload['last_name'],
         email=em,
-        contact=data.get('contact', ''),
+        contact=payload.get('contact', ''),
         role='staff'
     )
-    new_user.set_password(data.get('password', 'default123'))
+    new_user.set_password(password)
     db.session.add(new_user)
     db.session.commit()
     log_action('Staff Created', f"New staff account created: {new_user.first_name} {new_user.last_name} ({em})", user=current_user_jwt)
@@ -68,14 +86,29 @@ def manage_single_user(current_user_jwt, user_id):
         }), 200
 
     if request.method == 'PUT':
-        data = request.get_json()
-        user.first_name = data.get('first_name', user.first_name)
-        user.last_name  = data.get('last_name',  user.last_name)
-        user.email      = data.get('email',       user.email).strip().lower()
-        user.contact    = data.get('contact',     user.contact)
+        data = request.get_json() or {}
+        try:
+            payload = validate_fields(data, {
+                'first_name': FieldSpec(kind='name', required=False, max_length=80),
+                'last_name': FieldSpec(kind='name', required=False, max_length=80),
+                'email': FieldSpec(kind='email', required=False, max_length=120, escape_html=False),
+                'contact': FieldSpec(kind='phone', required=False, max_length=30, escape_html=False),
+                'role': FieldSpec(required=False, max_length=20, escape_html=False),
+            })
+        except ValidationError as exc:
+            return jsonify({'error': exc.message, 'field': exc.field}), exc.code
+
+        if data.get('first_name'):
+            user.first_name = payload['first_name']
+        if data.get('last_name'):
+            user.last_name = payload['last_name']
+        if data.get('email'):
+            user.email = payload['email']
+        if 'contact' in data:
+            user.contact = payload['contact']
 
         # Prevent role escalation to admin
-        new_role = data.get('role', user.role)
+        new_role = payload.get('role') or user.role
         if new_role == 'admin':
             new_role = 'staff'
         user.role = new_role
@@ -83,7 +116,10 @@ def manage_single_user(current_user_jwt, user_id):
         if 'is_active' in data:
             user.is_active = data['is_active']
         if data.get('password'):
-            user.set_password(data['password'])
+            try:
+                user.set_password(validate_password(data['password']))
+            except ValidationError as exc:
+                return jsonify({'error': exc.message, 'field': exc.field}), exc.code
         db.session.commit()
         return jsonify({'message': 'Staff account updated successfully'}), 200
 

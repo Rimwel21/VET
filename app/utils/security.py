@@ -1,5 +1,4 @@
 import hmac
-import hashlib
 import os
 # pyrefly: ignore [missing-import]
 from flask import session, current_app, request, abort
@@ -24,6 +23,9 @@ def verify_csrf_token():
     if request.method not in ["POST", "PUT", "PATCH", "DELETE"]:
         return
 
+    if _csrf_exempt_request():
+        return
+
     # Check both form field and header (for AJAX)
     token = request.form.get('csrf_token') or request.headers.get('X-CSRF-Token')
     
@@ -43,4 +45,21 @@ def verify_csrf_token():
             current_app.logger.debug(f"Headers: {dict(request.headers)}")
         
         abort(403, description="CSRF validation failed. Request denied.")
+
+
+def _csrf_exempt_request():
+    # SECURITY: CSRF applies to browser session flows.
+    # Bearer-authenticated API clients and stateless auth endpoints are exempt because
+    # they do not rely on ambient browser cookies and would otherwise break REST usage.
+    auth_header = request.headers.get('Authorization', '')
+    if auth_header.startswith('Bearer '):
+        return True
+
+    if request.path.startswith('/api/v1/auth/'):
+        return True
+
+    if request.path == '/predict':
+        return True
+
+    return False
 

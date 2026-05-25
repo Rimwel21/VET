@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, current_app, session
 from app.extensions import db
 from app.models.notification import PushSubscription
 from app.middleware.decorators import jwt_required, _get_current_user
+from app.utils.validation import ValidationError, ensure_safe_text
 
 api_push_bp = Blueprint('api_push', __name__)
 
@@ -21,17 +22,26 @@ def subscribe_push():
     if not data or 'endpoint' not in data:
         return jsonify({'error': 'Invalid subscription data'}), 400
 
-    existing = PushSubscription.query.filter_by(endpoint=data['endpoint']).first()
+    try:
+        endpoint = ensure_safe_text(data['endpoint'], field='endpoint', max_length=2048)
+        p256dh = ensure_safe_text(data['keys']['p256dh'], field='p256dh', max_length=255)
+        auth = ensure_safe_text(data['keys']['auth'], field='auth', max_length=255)
+    except (KeyError, TypeError):
+        return jsonify({'error': 'Invalid subscription data'}), 400
+    except ValidationError as exc:
+        return jsonify({'error': exc.message, 'field': exc.field}), exc.code
+
+    existing = PushSubscription.query.filter_by(endpoint=endpoint).first()
     if existing:
         existing.user_id = user.id
-        existing.p256dh  = data['keys']['p256dh']
-        existing.auth    = data['keys']['auth']
+        existing.p256dh  = p256dh
+        existing.auth    = auth
     else:
         db.session.add(PushSubscription(
             user_id  = user.id,
-            endpoint = data['endpoint'],
-            p256dh   = data['keys']['p256dh'],
-            auth     = data['keys']['auth']
+            endpoint = endpoint,
+            p256dh   = p256dh,
+            auth     = auth
         ))
 
     # Save preference to user model
@@ -51,7 +61,12 @@ def unsubscribe_push():
     if not data or 'endpoint' not in data:
         return jsonify({'error': 'Invalid subscription data'}), 400
 
-    existing = PushSubscription.query.filter_by(endpoint=data['endpoint']).first()
+    try:
+        endpoint = ensure_safe_text(data['endpoint'], field='endpoint', max_length=2048)
+    except ValidationError as exc:
+        return jsonify({'error': exc.message, 'field': exc.field}), exc.code
+
+    existing = PushSubscription.query.filter_by(endpoint=endpoint).first()
     if existing:
         db.session.delete(existing)
         

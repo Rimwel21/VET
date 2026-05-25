@@ -5,12 +5,17 @@ from app.models.user import User
 from app.middleware.decorators import _get_current_user
 from app.services.auth_service import create_jwt_token
 from app.services.rate_limiter import clear_attempts, is_limited, record_failure
-from app.utils.sanitize import clean_input
 from app.utils.logger import log_action
+from app.utils.validation import (
+    FieldSpec,
+    ValidationError,
+    validate_email,
+    validate_fields,
+    validate_password,
+)
 
 auth_bp = Blueprint('auth', __name__)
 EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
-
 
 # Security Navigation:
 # - Signup validation and privacy consent live here.
@@ -18,12 +23,25 @@ EMAIL_RE = re.compile(r'^[^@\s]+@[^@\s]+\.[^@\s]+$')
 @auth_bp.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
-        # Input normalization reduces malformed or unsafe values before validation.
-        fn  = clean_input(request.form.get('first_name', ''))
-        ln  = clean_input(request.form.get('last_name', ''))
-        em  = clean_input(request.form.get('email', '').lower())
-        ct  = clean_input(request.form.get('contact', ''))
-        pw  = request.form.get('password', '')
+        try:
+            # SECURITY: Signup input validation.
+            # Protects identity fields from malicious payloads and malformed values
+            # before an account can be created in the system.
+            payload = validate_fields(request.form, {
+                'first_name': FieldSpec(kind='name', required=True, max_length=80),
+                'last_name': FieldSpec(kind='name', required=True, max_length=80),
+                'email': FieldSpec(kind='email', required=True, max_length=120, escape_html=False),
+                'contact': FieldSpec(kind='phone', required=True, max_length=30, escape_html=False),
+            })
+            fn = payload['first_name']
+            ln = payload['last_name']
+            em = payload['email']
+            ct = payload['contact']
+            pw = validate_password(request.form.get('password', ''))
+        except ValidationError as exc:
+            flash(exc.message, 'error')
+            return render_template('signup.html')
+
         pw2 = request.form.get('re_password', '')
 
         # Basic server-side validation ensures the client cannot bypass form rules.
@@ -97,13 +115,21 @@ def signup():
 def login():
     if request.method == 'POST':
         if request.is_json:
-            data = request.get_json()
+            data = request.get_json(silent=True) or {}
         else:
             data = request.form
 
-        # Email is normalized before both rate limiting and account lookup so a caller
-        # cannot bypass protections with case or formatting variations.
-        email    = clean_input(data.get('email', '').lower())
+        try:
+            # SECURITY: Email validation at login.
+            # Prevents malformed and suspicious credential payloads from reaching
+            # authentication queries and rate-limit keys.
+            email = validate_email(data.get('email', ''), field='email')
+        except ValidationError as exc:
+            if request.is_json or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({'error': exc.message, 'field': exc.field}), exc.code
+            flash(exc.message, 'error')
+            return render_template('login.html'), exc.code
+
         password = data.get('password', '')
         rate_key = _login_rate_key(email)
 

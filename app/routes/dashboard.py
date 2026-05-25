@@ -35,15 +35,24 @@ def client_dashboard():
 @login_required
 def profile():
     from flask import request, flash
-    from app.utils.sanitize import clean_input
+    from app.utils.validation import FieldSpec, ValidationError, validate_fields
     
     user = _get_current_user()
     
     if request.method == 'POST':
-        # Simple update logic for contact
-        contact = clean_input(request.form.get('contact', ''))
-        first_name = clean_input(request.form.get('first_name', ''))
-        last_name = clean_input(request.form.get('last_name', ''))
+        try:
+            payload = validate_fields(request.form, {
+                'contact': FieldSpec(kind='phone', required=True, max_length=30, escape_html=False),
+                'first_name': FieldSpec(kind='name', required=True, max_length=80),
+                'last_name': FieldSpec(kind='name', required=True, max_length=80),
+            })
+        except ValidationError as exc:
+            flash(exc.message, 'error')
+            return redirect(url_for('dashboard.profile'))
+
+        contact = payload['contact']
+        first_name = payload['first_name']
+        last_name = payload['last_name']
         
         if contact and first_name and last_name:
             user.contact = contact

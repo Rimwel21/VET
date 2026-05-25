@@ -1,6 +1,12 @@
 from flask import Blueprint, request, jsonify
+from app.utils.validation import FieldSpec, ValidationError, validate_fields
 
 api_chatbot_bp = Blueprint('api_chatbot', __name__)
+
+# SECURITY: ASTRID Assistant protection.
+# Chat input is treated as untrusted user input just like form and API data.
+# This prevents the assistant endpoints from becoming a bypass path around the
+# platform's normal validation and filtering rules.
 
 # ── Medical keywords that redirect to VetScan ────────────────────────────────
 MEDICAL_KEYWORDS = [
@@ -81,9 +87,22 @@ FAQ_ANSWERS = {
 
 @api_chatbot_bp.route('/astrid', methods=['POST'])
 def astrid():
-    data    = request.get_json() or {}
-    message = data.get('message', '').lower().strip()
+    data = request.get_json() or {}
+    try:
+        # SECURITY: ASTRID input validation.
+        # Rejects malicious scripts, SQL fragments, shell payloads, and traversal attempts
+        # before the assistant processes the text, while preserving legitimate questions.
+        payload = validate_fields(data, {
+            'message': FieldSpec(required=True, max_length=500),
+        })
+    except ValidationError as exc:
+        return jsonify({'error': exc.message, 'field': exc.field}), exc.code
 
+    message = payload['message'].lower().strip()
+
+    # SECURITY: Scope control for the assistant.
+    # Keeps ASTRID focused on platform help and routes pet health concerns
+    # into the dedicated VetScan flow instead of handling diagnosis-like input directly.
     # Medical intercept — always redirect to VetScan
     if any(kw in message for kw in MEDICAL_KEYWORDS):
         return jsonify({'mode': 'vetscan_redirect'})
@@ -111,9 +130,22 @@ def health_chat():
     Dedicated pet health endpoint with species filtering.
     POST body: { "message": "...", "species": "dog" | "cat" | "rabbit" | "bird" | "" }
     """
-    data           = request.get_json() or {}
-    message        = data.get('message', '').lower().strip()
-    species_filter = data.get('species', '').lower().strip()
+    data = request.get_json() or {}
+    try:
+        # SECURITY: Validates ASTRID health helper payloads.
+        # Constrains free text and species filters so exploit strings cannot be injected
+        # through the virtual helper's symptom and species inputs.
+        payload = validate_fields(data, {
+            'message': FieldSpec(required=True, max_length=500),
+            'species': FieldSpec(required=False, max_length=20, escape_html=False),
+        })
+    except ValidationError as exc:
+        return jsonify({'error': exc.message, 'field': exc.field}), exc.code
+
+    message = payload['message'].lower().strip()
+    species_filter = (payload.get('species') or '').lower().strip()
+    if species_filter not in {'', 'dog', 'cat', 'rabbit', 'bird'}:
+        return jsonify({'error': 'Invalid species filter.', 'field': 'species'}), 400
 
     # Knowledge base is empty in scripted mode — return no-match
     return jsonify({

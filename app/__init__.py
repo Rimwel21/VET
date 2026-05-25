@@ -64,23 +64,75 @@ def create_app(config_name='default'):
         if request.is_json or request.path.startswith('/api/') or request.path.startswith('/staff/'):
             return jsonify({'error': 'An internal server error occurred. Please try again.'}), 500
         return render_template('offline.html'), 500
+
+    @app.errorhandler(413)
+    def handle_payload_too_large(error):
+        from flask import request, jsonify, flash, redirect
+        message = 'Request payload is too large.'
+        if (
+            request.is_json
+            or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+            or request.path.startswith('/api/')
+            or request.path.startswith('/staff/')
+        ):
+            return jsonify({'error': message}), 413
+        flash(message, 'error')
+        return redirect(request.referrer or '/')
+
+    from app.utils.validation import ValidationError
+
+    @app.errorhandler(ValidationError)
+    def handle_validation_error(error):
+        from flask import request, jsonify, flash, redirect
+
+        message = error.message
+        if (
+            request.is_json
+            or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+            or request.path.startswith('/api/')
+            or request.path.startswith('/staff/')
+        ):
+            return jsonify({'error': message, 'field': error.field}), error.code
+        flash(message, 'error')
+        return redirect(request.referrer or '/')
         
     return app
 def _run_migrations():
     """Applies simple schema migrations that may be missing in older DBs."""
     # pyrefly: ignore [missing-import]
-    from sqlalchemy import text
-    
-    # List of migrations to try
-    migrations = [
-        "ALTER TABLE bookings ADD COLUMN IF NOT EXISTS handled_by VARCHAR(100)",
-        "ALTER TABLE otp_verifications ADD COLUMN IF NOT EXISTS reset_token VARCHAR(255)",
-        "ALTER TABLE otp_verifications ADD COLUMN IF NOT EXISTS token_expires_at TIMESTAMP",
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS push_enabled BOOLEAN DEFAULT TRUE",
-        "ALTER TABLE users ADD COLUMN privacy_consent BOOLEAN DEFAULT FALSE",
-        "ALTER TABLE users ADD COLUMN privacy_consent_at TIMESTAMP",
-        "CREATE TABLE IF NOT EXISTS audit_logs (id SERIAL PRIMARY KEY, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, user_id INTEGER REFERENCES users(id), user_name VARCHAR(100), action_type VARCHAR(50), description TEXT, ip_address VARCHAR(45))"
-    ]
+    from sqlalchemy import inspect, text
+
+    inspector = inspect(db.engine)
+    existing_tables = set(inspector.get_table_names())
+    if not existing_tables:
+        return
+
+    # SECURITY: Schema hardening only runs against tables and columns that already exist.
+    # Column-by-column checks avoid dialect-specific ALTER TABLE syntax issues while keeping
+    # legacy deployments synchronized with the current security fields.
+    migrations = []
+
+    def has_column(table_name, column_name):
+        return column_name in {col['name'] for col in inspector.get_columns(table_name)}
+
+    if 'bookings' in existing_tables and not has_column('bookings', 'handled_by'):
+        migrations.append("ALTER TABLE bookings ADD COLUMN handled_by VARCHAR(100)")
+    if 'otp_verifications' in existing_tables:
+        if not has_column('otp_verifications', 'reset_token'):
+            migrations.append("ALTER TABLE otp_verifications ADD COLUMN reset_token VARCHAR(255)")
+        if not has_column('otp_verifications', 'token_expires_at'):
+            migrations.append("ALTER TABLE otp_verifications ADD COLUMN token_expires_at TIMESTAMP")
+    if 'users' in existing_tables:
+        if not has_column('users', 'push_enabled'):
+            migrations.append("ALTER TABLE users ADD COLUMN push_enabled BOOLEAN DEFAULT TRUE")
+        if not has_column('users', 'privacy_consent'):
+            migrations.append("ALTER TABLE users ADD COLUMN privacy_consent BOOLEAN DEFAULT FALSE")
+        if not has_column('users', 'privacy_consent_at'):
+            migrations.append("ALTER TABLE users ADD COLUMN privacy_consent_at TIMESTAMP")
+    if 'audit_logs' not in existing_tables and 'users' in existing_tables:
+        migrations.append(
+            "CREATE TABLE IF NOT EXISTS audit_logs (id SERIAL PRIMARY KEY, timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP, user_id INTEGER REFERENCES users(id), user_name VARCHAR(100), action_type VARCHAR(50), description TEXT, ip_address VARCHAR(45))"
+        )
     
     for m in migrations:
         try:
@@ -127,9 +179,16 @@ def _enforce_single_admin():
     Removes any other admin-role accounts and guarantees the canonical
     admin credentials are always correct.
     """
+    # SECURITY: Startup RBAC integrity check.
+    # This runs only after the schema exists, so fresh QA/test databases can boot cleanly
+    # before tables are created. It prevents unauthorized persistent admin accounts.
+    from sqlalchemy import inspect
     from app.models.user import User
     ADMIN_EMAIL    = 'adminvetclinic@gmail.com'
     ADMIN_PASSWORD = 'vetadminclinic1214'
+
+    if 'users' not in inspect(db.engine).get_table_names():
+        return
 
     # Ensure the canonical admin exists
     admin = User.query.filter_by(email=ADMIN_EMAIL).first()
@@ -164,10 +223,10 @@ def _enforce_single_admin():
 
     # Demote any other admin-role accounts to client to enforce single-admin constraint
     # while preserving database referential integrity (e.g. audit logs, bookings)
-    extra_admins = User.query.filter(
-        User.role == 'admin',
-        User.email != ADMIN_EMAIL
-    ).all()
+    extra_admins = (User.query
+                    .filter_by(role='admin')
+                    .filter(User.email != ADMIN_EMAIL)
+                    .all())
     if extra_admins:
         for u in extra_admins:
             print(f'[BOOT] Demoting unauthorized admin account: {u.email}')

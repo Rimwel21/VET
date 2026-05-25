@@ -4,6 +4,7 @@ from app.extensions import db
 from app.models.report import Report
 from app.models.user import User
 from app.middleware.decorators import role_required
+from app.utils.validation import FieldSpec, ValidationError, validate_fields
 
 api_reports_bp = Blueprint('api_reports', __name__)
 
@@ -33,16 +34,21 @@ def reports(current_user_jwt):
         } for r in items]), 200
 
 
-    data = request.get_json()
-    if not data.get('title') or not data.get('description'):
-        return jsonify({'error': 'Title and description are required'}), 400
+    data = request.get_json() or {}
+    try:
+        payload = validate_fields(data, {
+            'title': FieldSpec(required=True, max_length=150),
+            'category': FieldSpec(required=False, max_length=50),
+            'description': FieldSpec(required=True, max_length=4000, allow_newlines=True),
+        })
+    except ValidationError as exc:
+        return jsonify({'error': exc.message, 'field': exc.field}), exc.code
 
-    report = Report(
-        title=data.get('title'),
-        category=data.get('category', 'Other'),
-        description=data.get('description'),
-        user_id=current_user_jwt.id
-    )
+    report = Report()
+    report.title = payload['title']
+    report.category = payload.get('category') or 'Other'
+    report.description = payload['description']
+    report.user_id = current_user_jwt.id
     db.session.add(report)
     db.session.commit()
     return jsonify({'message': 'Report submitted successfully'}), 201
@@ -82,12 +88,21 @@ def report_detail(current_user_jwt, report_id):
         return jsonify({'error': 'Access denied: Admins only.'}), 403
 
     if request.method == 'PUT':
-        data = request.get_json()
+        data = request.get_json() or {}
+        try:
+            payload = validate_fields(data, {
+                'status': FieldSpec(required=False, max_length=20, escape_html=False),
+                'admin_comment': FieldSpec(required=False, max_length=4000, allow_newlines=True),
+                'title': FieldSpec(required=False, max_length=150),
+                'description': FieldSpec(required=False, max_length=4000, allow_newlines=True),
+            })
+        except ValidationError as exc:
+            return jsonify({'error': exc.message, 'field': exc.field}), exc.code
         
-        new_status = data.get('status', report.status)
-        new_comment = data.get('admin_comment', report.admin_comment or '')
-        new_title = data.get('title', report.title)
-        new_desc = data.get('description', report.description)
+        new_status = payload.get('status') or report.status
+        new_comment = payload.get('admin_comment') if 'admin_comment' in data else (report.admin_comment or '')
+        new_title = payload.get('title') or report.title
+        new_desc = payload.get('description') or report.description
         
         # Detect if anything actually changed
         content_changed = (new_title != report.title or new_desc != report.description)
@@ -149,15 +164,23 @@ def report_detail(current_user_jwt, report_id):
 @api_reports_bp.route('/<int:report_id>/review', methods=['PUT'])
 @role_required(['admin'])
 def review_report(current_user_jwt, report_id):
-    data = request.get_json()
+    data = request.get_json() or {}
     report = db.session.get(Report, report_id)
     if not report:
         return jsonify({'error': 'Report not found'}), 404
 
-    report.admin_comment = data.get("comment")
-    report.admin_review_status = data.get("status", "reviewed")
+    try:
+        payload = validate_fields(data, {
+            'comment': FieldSpec(required=False, max_length=4000, allow_newlines=True),
+            'status': FieldSpec(required=False, max_length=50, escape_html=False),
+        })
+    except ValidationError as exc:
+        return jsonify({'error': exc.message, 'field': exc.field}), exc.code
+
+    report.admin_comment = payload.get("comment")
+    report.admin_review_status = payload.get("status") or "reviewed"
     # Also update main status for legacy UI compatibility
-    report.status = data.get("status", "reviewed").title()
+    report.status = (payload.get("status") or "reviewed").title()
     report.reviewed_by = current_user_jwt.id
     report.reviewed_at = datetime.utcnow()
 

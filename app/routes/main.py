@@ -4,6 +4,7 @@ from app.extensions import db
 from app.models.service import Service
 from app.models.contact import ContactMessage
 from app.services.booking_service import PET_TYPES
+from app.utils.validation import FieldSpec, ValidationError, validate_fields
 
 main_bp = Blueprint('main', __name__)
 
@@ -28,10 +29,21 @@ def services_page():
 @main_bp.route('/contact', methods=['GET', 'POST'])
 def contact():
     if request.method == 'POST':
-        n = request.form.get('name', '').strip()
-        e = request.form.get('email', '').strip()
-        s = request.form.get('subject', '').strip()
-        m = request.form.get('message', '').strip()
+        try:
+            payload = validate_fields(request.form, {
+                'name': FieldSpec(kind='name', required=True, max_length=120),
+                'email': FieldSpec(kind='email', required=True, max_length=120, escape_html=False),
+                'subject': FieldSpec(required=False, max_length=200),
+                'message': FieldSpec(required=True, max_length=2000, allow_newlines=True),
+            })
+        except ValidationError as exc:
+            flash(exc.message, 'error')
+            return render_template('contact.html')
+
+        n = payload['name']
+        e = payload['email']
+        s = payload['subject']
+        m = payload['message']
 
         if not all([n, e, m]):
             flash('Please fill in all required fields.', 'error')

@@ -5,8 +5,14 @@ from app.models.service import Service
 from app.models.booking import Booking
 from app.middleware.decorators import login_required, _get_current_user
 from app.services.booking_service import booked_slots_on, create_booking, ALL_SLOTS, PET_TYPES
-from app.utils.sanitize import clean_input
 from app.services.email_service import send_booking_email
+from app.utils.validation import (
+    FieldSpec,
+    ValidationError,
+    validate_choice,
+    validate_email,
+    validate_fields,
+)
 
 booking_bp = Blueprint('booking', __name__)
 
@@ -32,15 +38,43 @@ def booking_page():
 @booking_bp.route('/book', methods=['POST'])
 @login_required
 def book():
-    g = lambda k: clean_input(request.form.get(k, ''))
+    try:
+        # SECURITY: Booking payload validation.
+        # Screens appointment, owner, pet, and medical free-text fields so users can
+        # submit normal booking details while malicious payloads are rejected early.
+        payload = validate_fields(request.form, {
+            'name': FieldSpec(required=True, max_length=120),
+            'email': FieldSpec(kind='email', required=True, max_length=120, escape_html=False),
+            'phone': FieldSpec(kind='phone', required=True, max_length=30, escape_html=False),
+            'alt_phone': FieldSpec(kind='phone', required=False, max_length=30, escape_html=False),
+            'address': FieldSpec(required=False, max_length=255),
+            'pet_name': FieldSpec(required=False, max_length=80),
+            'pet_type': FieldSpec(kind='choice', required=True, choices=tuple(PET_TYPES), escape_html=False),
+            'pet_breed': FieldSpec(required=False, max_length=100),
+            'pet_sex': FieldSpec(required=False, max_length=30),
+            'pet_age': FieldSpec(required=False, max_length=30),
+            'pet_weight': FieldSpec(required=False, max_length=20),
+            'pet_color': FieldSpec(required=False, max_length=100),
+            'visit_reason': FieldSpec(required=False, max_length=1500, allow_newlines=True),
+            'medical_history': FieldSpec(required=False, max_length=3000, allow_newlines=True),
+            'allergies': FieldSpec(required=False, max_length=255),
+            'notes': FieldSpec(required=False, max_length=1500, allow_newlines=True),
+            'payment_method': FieldSpec(required=False, max_length=50),
+            'service': FieldSpec(required=True, max_length=20, escape_html=False),
+            'slot': FieldSpec(required=True, max_length=20, escape_html=False),
+            'date': FieldSpec(required=True, max_length=10, escape_html=False),
+        })
+    except ValidationError as exc:
+        flash(exc.message, 'error')
+        return redirect(url_for('booking.booking_page'))
 
-    name       = g('name')
-    email      = g('email')
-    phone      = g('phone')
-    pet_type   = g('pet_type')
-    service_id = g('service')
-    slot       = g('slot')
-    date_str   = g('date')
+    name = payload['name']
+    email = payload['email']
+    phone = payload['phone']
+    pet_type = payload['pet_type']
+    service_id = payload['service']
+    slot = payload['slot']
+    date_str = payload['date']
 
     if not all([name, email, phone, pet_type, service_id, slot, date_str]):
         flash('Please fill in all required fields.', 'error')
@@ -48,19 +82,30 @@ def book():
 
     try:
         booking_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        service_id_int = int(service_id)
     except ValueError:
-        flash('Invalid date selected.', 'error')
+        flash('Invalid booking details selected.', 'error')
         return redirect(url_for('booking.booking_page'))
 
     if booking_date < date.today():
         flash('Cannot book a date in the past.', 'error')
         return redirect(url_for('booking.booking_page'))
 
+    try:
+        # SECURITY: Business-rule validation.
+        # Confirms the selected slot and email format are valid application values,
+        # preventing tampered booking submissions from bypassing UI constraints.
+        slot = validate_choice(slot, field='slot', choices=tuple(ALL_SLOTS))
+        email = validate_email(email)
+    except ValidationError as exc:
+        flash(exc.message, 'error')
+        return redirect(url_for('booking.booking_page'))
+
     if slot in booked_slots_on(booking_date):
         flash(f'Sorry! {slot} on {booking_date.strftime("%b %d")} was just booked. Choose another slot.', 'error')
         return redirect(url_for('booking.booking_page'))
 
-    service = db.session.get(Service, service_id)
+    service = db.session.get(Service, service_id_int)
     if not service:
         flash('Invalid service selected.', 'error')
         return redirect(url_for('booking.booking_page'))
@@ -69,19 +114,19 @@ def book():
     data = {
         'service_id': service.id, 'slot': slot, 'date': booking_date,
         'name': name, 'email': email, 'phone': phone,
-        'alt_phone': g('alt_phone'), 'address': g('address'),
-        'pet_name': g('pet_name'), 'pet_type': pet_type,
-        'pet_breed': g('pet_breed'), 'pet_sex': g('pet_sex'),
-        'pet_age': g('pet_age'), 'pet_weight': g('pet_weight'), 'pet_color': g('pet_color'),
-        'visit_reason': g('visit_reason'), 'medical_history': g('medical_history'),
-        'allergies': g('allergies'), 'notes': g('notes'),
-        'payment_method': g('payment_method'),
+        'alt_phone': payload['alt_phone'], 'address': payload['address'],
+        'pet_name': payload['pet_name'], 'pet_type': pet_type,
+        'pet_breed': payload['pet_breed'], 'pet_sex': payload['pet_sex'],
+        'pet_age': payload['pet_age'], 'pet_weight': payload['pet_weight'], 'pet_color': payload['pet_color'],
+        'visit_reason': payload['visit_reason'], 'medical_history': payload['medical_history'],
+        'allergies': payload['allergies'], 'notes': payload['notes'],
+        'payment_method': payload['payment_method'],
         'consent': request.form.get('consent') == 'on',
     }
 
     new_booking = create_booking(data, user.id)
     flash(
-        f'Booking submitted. {service.name} for {g("pet_name") or "your pet"} '
+        f'Booking submitted. {service.name} for {payload["pet_name"] or "your pet"} '
         f'on {booking_date.strftime("%B %d, %Y")} at {slot} is now pending staff confirmation.',
         'success'
     )

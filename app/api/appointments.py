@@ -4,8 +4,15 @@ from app.extensions import db
 from app.models.booking import Booking
 from app.models.service import Service
 from app.middleware.decorators import jwt_required, role_required
-from app.services.booking_service import booked_slots_on, get_no_show_risk, create_booking
+from app.services.booking_service import booked_slots_on, get_no_show_risk, create_booking, ALL_SLOTS
 from app.services.push_service import send_push_notification
+from app.utils.validation import (
+    FieldSpec,
+    ValidationError,
+    validate_choice,
+    validate_email,
+    validate_fields,
+)
 
 api_appointments_bp = Blueprint('api_appointments', __name__)
 
@@ -28,27 +35,58 @@ def appointments(current_user_jwt):
         } for b in bookings]), 200
 
     # POST
-    data     = request.get_json()
+    data = request.get_json() or {}
     required = ['service_id', 'slot', 'date', 'name', 'email', 'phone', 'pet_type']
     if not all(f in data for f in required):
         return jsonify({'error': 'Missing required fields'}), 400
 
     try:
-        booking_date = datetime.strptime(data['date'], '%Y-%m-%d').date()
+        normalized = validate_fields(data, {
+            'name': FieldSpec(required=True, max_length=120),
+            'email': FieldSpec(kind='email', required=True, max_length=120, escape_html=False),
+            'phone': FieldSpec(kind='phone', required=True, max_length=30, escape_html=False),
+            'pet_type': FieldSpec(required=True, max_length=50, escape_html=False),
+            'pet_name': FieldSpec(required=False, max_length=80),
+            'slot': FieldSpec(required=True, max_length=20, escape_html=False),
+            'date': FieldSpec(required=True, max_length=10, escape_html=False),
+            'alt_phone': FieldSpec(kind='phone', required=False, max_length=30, escape_html=False),
+            'address': FieldSpec(required=False, max_length=255),
+            'pet_breed': FieldSpec(required=False, max_length=100),
+            'pet_sex': FieldSpec(required=False, max_length=30),
+            'pet_age': FieldSpec(required=False, max_length=30),
+            'pet_weight': FieldSpec(required=False, max_length=20),
+            'pet_color': FieldSpec(required=False, max_length=100),
+            'visit_reason': FieldSpec(required=False, max_length=1500, allow_newlines=True),
+            'medical_history': FieldSpec(required=False, max_length=3000, allow_newlines=True),
+            'allergies': FieldSpec(required=False, max_length=255),
+            'notes': FieldSpec(required=False, max_length=1500, allow_newlines=True),
+            'payment_method': FieldSpec(required=False, max_length=50),
+        })
+        normalized['slot'] = validate_choice(normalized['slot'], field='slot', choices=tuple(ALL_SLOTS))
+        normalized['email'] = validate_email(normalized['email'])
+    except ValidationError as exc:
+        return jsonify({'error': exc.message, 'field': exc.field}), exc.code
+
+    try:
+        booking_date = datetime.strptime(normalized['date'], '%Y-%m-%d').date()
+        service_id = int(data['service_id'])
     except ValueError:
-        return jsonify({'error': 'Invalid date format'}), 400
+        return jsonify({'error': 'Invalid booking payload'}), 400
 
     if booking_date < date.today():
         return jsonify({'error': 'Cannot book a date in the past'}), 400
 
-    if data['slot'] in booked_slots_on(booking_date):
-        return jsonify({'error': f"Sorry! {data['slot']} on {data['date']} was just booked."}), 409
+    if normalized['slot'] in booked_slots_on(booking_date):
+        return jsonify({'error': f"Sorry! {normalized['slot']} on {normalized['date']} was just booked."}), 409
 
-    if not db.session.get(Service, data['service_id']):
+    if not db.session.get(Service, service_id):
         return jsonify({'error': 'Invalid service selected.'}), 400
 
-    data['date'] = booking_date
-    booking = create_booking(data, current_user_jwt.id)
+    booking_payload = dict(data)
+    booking_payload.update(normalized)
+    booking_payload['service_id'] = service_id
+    booking_payload['date'] = booking_date
+    booking = create_booking(booking_payload, current_user_jwt.id)
     
     # Notify staff
     from app.models.user import User
@@ -57,7 +95,7 @@ def appointments(current_user_jwt):
         send_push_notification(
             staff.id,
             "New Booking Alert",
-            f"A new booking request from {data['name']} for {data['pet_name']} on {data['date']}."
+            f"A new booking request from {booking_payload['name']} for {booking_payload.get('pet_name')} on {booking_payload['date']}."
         )
 
     return jsonify({'message': 'Booking created successfully', 'booking_id': booking.id}), 201
