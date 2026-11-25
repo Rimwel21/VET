@@ -92,16 +92,19 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .nav-auth { display: flex; align-items: center; gap: 1.2rem; flex-shrink: 0; margin-left: auto; }
 .nav-user { color: rgba(255,255,255,0.85); font-size: 0.9rem; font-weight: 600; white-space: nowrap; }
 .btn-nav-outline {
+    display: inline-flex; align-items: center; justify-content: center; min-height: 40px;
     padding: 0.4rem 1.1rem; border-radius: 8px;
     border: 1.5px solid rgba(255,255,255,0.5);
     color: var(--white); font-size: 0.85rem; font-weight: 600;
-    transition: var(--transition);
+    transition: background-color 0.25s ease;
 }
 .btn-nav-outline:hover { background: rgba(255,255,255,0.15); }
 .btn-nav-fill {
+    display: inline-flex; align-items: center; justify-content: center; min-height: 40px;
     padding: 0.4rem 1.1rem; border-radius: 8px;
     background: var(--teal); color: var(--white);
-    font-size: 0.85rem; font-weight: 700; transition: var(--transition);
+    font-size: 0.85rem; font-weight: 700;
+    transition: background-color 0.25s ease, transform 0.25s ease;
 }
 .btn-nav-fill:hover { background: #00b09c; transform: translateY(-1px); }
 
@@ -110,6 +113,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     display: inline-flex;
     align-items: center;
     gap: 10px;
+    min-height: 40px;
     padding: 0.65rem 1.4rem;
     border-radius: 50px;
     background: rgba(255, 255, 255, 0.08);
@@ -120,7 +124,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     font-size: 0.9rem;
     font-weight: 700;
     text-decoration: none;
-    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: background-color 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
     position: relative;
     z-index: 10;
@@ -511,10 +515,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     max-width: 100%; word-wrap: break-word;
 }
 .service-link { 
+    display: inline-flex; align-items: center; justify-content: center; min-height: 40px;
     font-weight: 800; color: var(--white); font-size: 0.85rem; 
     text-decoration: none; background: var(--teal); 
     padding: 0.6rem 1.5rem; border-radius: 20px;
-    transition: all 0.3s ease;
+    transition: background-color 0.25s ease, transform 0.25s ease;
 }
 .service-link:hover { background: var(--blue-dark); transform: scale(1.05); }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
@@ -739,6 +744,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     display: inline-flex;
     align-items: center;
     gap: 8px;
+    min-height: 40px;
     padding: 7px 16px;
     background: rgba(255, 255, 255, 0.08);
     backdrop-filter: blur(8px);
@@ -749,7 +755,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     font-weight: 700;
     font-size: 0.82rem;
     text-decoration: none;
-    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     white-space: nowrap;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
@@ -1833,7 +1839,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     border-radius: 10px;
     background: white;
     font-family: inherit;
-    transition: all 0.2s;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 .form-group-contact input:focus,
 .form-group-contact textarea:focus {
@@ -1843,6 +1849,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 }
 .btn-contact-submit {
     width: 100%;
+    min-height: 44px;
     background: #1a3c8f;
     color: white;
     border: none;
@@ -1851,7 +1858,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     font-weight: 800;
     font-size: 1rem;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 .btn-contact-submit:hover {
     background: #132d6d;
@@ -1871,5 +1878,31 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 @media (max-width: 600px) {
     .form-row {
         grid-template-columns: 1fr;
+    }
+}
+
+
+/* ===================== TYPOGRAPHY, NUMBERS & REDUCED MOTION ===================== */
+h1, h2, h3, .section-title, .page-hero h1 {
+    text-wrap: balance;
+}
+
+.stat-num,
+.stat-value,
+.kpi-value,
+.metric-value,
+.badge-count,
+[data-count] {
+    font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
     }
 }
